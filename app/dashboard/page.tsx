@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 
 export default function Dashboard() {
-  const [missionActive, setMissionActive] = useState(true);
+  const missionActive = true;
 
   return (
     <div className="min-h-screen bg-ops-dark">
