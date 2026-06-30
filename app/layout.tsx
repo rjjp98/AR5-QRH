@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FlightOps Commander',
-  description: 'Professional flight operations platform',
+  title: 'AR5 MK3 QRH',
+  description: 'AR5 MK3 Flight Operations Commander - Tekever Flight Operations',
   manifest: '/manifest.json',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebApp: {
