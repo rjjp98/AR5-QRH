@@ -89,7 +89,7 @@ export default function Home() {
                 AR5 MK3
               </h1>
               <p className="text-2xl text-red-500 font-bold tracking-widest mb-8 drop-shadow-lg">
-                FLIGHT OPERATIONS COMMANDER
+                QUICK REFERENCE HANDBOOK
               </p>
               <div className="flex gap-2 justify-center mb-8">
                 <div className="w-1 h-12 bg-gradient-to-b from-red-600 to-transparent drop-shadow-lg"></div>
