@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import html2pdf from 'html2pdf.js';
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface ChecklistField {
   id: string;
@@ -22,7 +19,16 @@ export default function NOC() {
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfName, setPdfName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize PDF.js worker only on client side
+  useEffect(() => {
+    setIsClient(true);
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    }
+  }, []);
 
   const tabs = [
     { id: 'checklists', label: 'CHECKLISTS' },
@@ -142,6 +148,10 @@ export default function NOC() {
     },
     {} as Record<string, ChecklistField[]>
   );
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
