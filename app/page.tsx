@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-import html2pdf from 'html2pdf.js';
+import dynamic from 'next/dynamic';
+
+// Dynamically import modules that use 'self' to avoid SSR issues
+const PDFModule = dynamic(
+  () => import('pdfjs-dist'),
+  { ssr: false }
+);
 
 interface ChecklistField {
   id: string;
@@ -26,7 +31,9 @@ export default function NOC() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      import('pdfjs-dist').then((pdfjsLib) => {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      });
     }
   }, []);
 
@@ -50,6 +57,7 @@ export default function NOC() {
   const parseChecklistFromPDF = async (file: File) => {
     setIsProcessing(true);
     try {
+      const pdfjsLib = await import('pdfjs-dist');
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
@@ -124,10 +132,11 @@ export default function NOC() {
     }
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const element = document.getElementById('noc-content');
     if (!element) return;
 
+    const html2pdf = (await import('html2pdf.js')).default;
     const opt = {
       margin: 5,
       filename: `AR5_NOC_${new Date().toISOString().split('T')[0]}.pdf`,
