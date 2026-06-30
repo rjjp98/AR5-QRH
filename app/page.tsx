@@ -1,13 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-// Dynamically import modules that use 'self' to avoid SSR issues
-const PDFModule = dynamic(
-  () => import('pdfjs-dist'),
-  { ssr: false }
-);
 
 interface ChecklistField {
   id: string;
@@ -26,15 +19,12 @@ export default function NOC() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfjsRef = useRef<any>(null);
+  const html2pdfRef = useRef<any>(null);
 
-  // Initialize PDF.js worker only on client side
+  // Initialize on client side only
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== 'undefined') {
-      import('pdfjs-dist').then((pdfjsLib) => {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-      });
-    }
   }, []);
 
   const tabs = [
@@ -57,9 +47,15 @@ export default function NOC() {
   const parseChecklistFromPDF = async (file: File) => {
     setIsProcessing(true);
     try {
-      const pdfjsLib = await import('pdfjs-dist');
+      // Lazy load pdfjs only when needed
+      if (!pdfjsRef.current) {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsRef.current = pdfjsLib;
+        pdfjsRef.current.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      }
+
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsRef.current.getDocument({ data: arrayBuffer }).promise;
 
       const extractedFields: ChecklistField[] = [];
       let fieldId = 0;
@@ -70,8 +66,7 @@ export default function NOC() {
         const textContent = await page.getTextContent();
         const text = textContent.items.map((item: any) => item.str).join(' ');
 
-        // Parse checklist items (basic parsing for common patterns)
-        // Looking for patterns like "123 Item Name" or "- Item Name"
+        // Parse checklist items
         const lines = text.split(/\n|\r/);
         let currentSection = 'General';
 
@@ -83,7 +78,7 @@ export default function NOC() {
             currentSection = trimmed;
           }
 
-          // Detect checklist items (number followed by text)
+          // Detect checklist items
           const itemMatch = trimmed.match(/^(\d+[a-z]?|\-)\s+(.+?)(\s+(\(.*?\)|\[.*?\]|\d+))?$/);
           if (itemMatch && trimmed.length > 3) {
             const label = itemMatch[2].trim();
@@ -114,7 +109,7 @@ export default function NOC() {
       setChecklist(uniqueFields);
       setPdfName(file.name);
       setPdfLoaded(true);
-      setFormData({}); // Reset form data
+      setFormData({});
     } catch (error) {
       console.error('Erro ao processar PDF:', error);
       alert('Erro ao processar PDF. Tenta novamente.');
@@ -136,15 +131,25 @@ export default function NOC() {
     const element = document.getElementById('noc-content');
     if (!element) return;
 
-    const html2pdf = (await import('html2pdf.js')).default;
-    const opt = {
-      margin: 5,
-      filename: `AR5_NOC_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-    };
-    html2pdf().set(opt).from(element).save();
+    try {
+      // Lazy load html2pdf only when needed
+      if (!html2pdfRef.current) {
+        const html2pdf = await import('html2pdf.js');
+        html2pdfRef.current = html2pdf.default;
+      }
+
+      const opt = {
+        margin: 5,
+        filename: `AR5_NOC_${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+      };
+      html2pdfRef.current().set(opt).from(element).save();
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tenta novamente.');
+    }
   };
 
   const groupedChecklist = checklist.reduce(
