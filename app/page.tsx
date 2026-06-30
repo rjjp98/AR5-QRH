@@ -17,7 +17,6 @@ interface ChecklistField {
 
 export default function NOC() {
   const [activeTab, setActiveTab] = useState('noc');
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [checklist, setChecklist] = useState<ChecklistField[]>([]);
   const [pdfLoaded, setPdfLoaded] = useState(false);
@@ -32,11 +31,7 @@ export default function NOC() {
   ];
 
   const handleTabChange = (tabId: string) => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setActiveTab(tabId);
-      setIsTransitioning(false);
-    }, 300);
+    setActiveTab(tabId);
   };
 
   const handleInputChange = (key: string, value: string | boolean) => {
