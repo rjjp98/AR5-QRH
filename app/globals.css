@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #0f0f0f;
+  color: #e4e4e7;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Smooth animations */
+@layer utilities {
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .card-ops {
+    @apply rounded-lg border border-ops-border bg-ops-surface p-4 transition-smooth hover:bg-ops-surface-alt;
+  }
+
+  .btn-ops {
+    @apply px-4 py-2 rounded-lg font-medium transition-smooth focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-ops-primary {
+    @apply bg-petroleum-600 text-white hover:bg-petroleum-700 active:bg-petroleum-800;
+  }
+
+  .btn-ops-secondary {
+    @apply bg-ops-surface text-ops-primary border border-ops-border hover:bg-ops-surface-alt;
+  }
+}
