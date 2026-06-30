@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('checklists');
@@ -66,18 +65,12 @@ export default function Home() {
 
       {/* Hero Section with AR5 Image */}
       <div className="relative z-30 min-h-[700px] flex items-center justify-center overflow-hidden">
-        {/* AR5 Image with fade animation */}
+        {/* AR5 SVG with fade animation */}
         <div
           className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          <img
-            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3ClinearGradient id='grad1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:rgba(255,255,255,0.1);stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:rgba(239,68,68,0.05);stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23grad1)' width='1200' height='800'/%3E%3C/svg%3E"
-            alt="AR5 Background"
-            className="absolute inset-0 w-full h-full object-cover opacity-20"
-          />
-          
           {/* AR5 SVG - Professional and Aggressive */}
           <svg
             width="700"
