@@ -31,7 +31,8 @@
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "workbox-window": "^7.0.0",
-    "html2pdf.js": "^0.10.1"
+    "html2pdf.js": "^0.10.1",
+    "pdfjs-dist": "^4.0.379"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
