@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('checklists');
@@ -16,25 +15,35 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0e27] via-[#0f1535] to-[#0a0e27]">
-      {/* Header */}
+      {/* Header with Navigation Tabs */}
       <header className="border-b border-white/5 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between gap-8">
           {/* Tekever Logo */}
-          <div className="flex items-center gap-3">
-            <svg width="140" height="40" viewBox="0 0 140 40" className="fill-red-500">
+          <div className="flex-shrink-0">
+            <svg width="120" height="35" viewBox="0 0 140 40" className="fill-red-500">
               <text x="0" y="32" fontSize="28" fontWeight="bold" letterSpacing="2">TEKEVER</text>
             </svg>
           </div>
 
-          {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="#" className="text-slate-300 hover:text-white text-sm transition">HOME</Link>
-            <Link href="#" className="text-slate-300 hover:text-white text-sm transition">ABOUT</Link>
-            <Link href="#" className="text-slate-300 hover:text-white text-sm transition">CONTACT</Link>
+          {/* Navigation Tabs */}
+          <nav className="flex flex-wrap gap-6 md:gap-8 justify-center flex-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 font-semibold text-sm tracking-wider transition-all duration-300 border-b-2 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'text-white border-cyan-400 opacity-100'
+                    : 'text-slate-400 border-transparent opacity-30 hover:opacity-60'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </nav>
 
           {/* Menu Toggle */}
-          <button className="md:hidden text-white">
+          <button className="md:hidden text-white flex-shrink-0">
             <svg width="24" height="24" fill="none" stroke="currentColor">
               <path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -49,7 +58,7 @@ export default function Home() {
         
         {/* AR5 SVG */}
         <div className="relative z-10 flex flex-col items-center gap-8 px-6">
-          <svg width="400" height="300" viewBox="0 0 400 300" className="drop-shadow-2xl">
+          <svg width="500" height="350" viewBox="0 0 400 300" className="drop-shadow-2xl">
             {/* Fuselage */}
             <ellipse cx="200" cy="150" rx="80" ry="50" fill="white" opacity="0.95" />
             
@@ -89,91 +98,80 @@ export default function Home() {
 
           {/* Title */}
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-3 tracking-wider">
+            <h1 className="text-6xl md:text-8xl font-bold text-white mb-3 tracking-wider">
               AR5
             </h1>
-            <p className="text-cyan-400 text-lg md:text-xl font-light tracking-widest">
+            <p className="text-cyan-400 text-lg md:text-2xl font-light tracking-widest">
               FLIGHT OPERATIONS COMMANDER
             </p>
-            <p className="text-slate-400 text-sm mt-2">v1.0</p>
+            <p className="text-slate-400 text-sm mt-3">v1.0</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex flex-wrap gap-3 md:gap-6 justify-center md:justify-start">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-semibold text-sm tracking-wider transition-all duration-300 border-b-2 ${
-                activeTab === tab.id
-                  ? 'text-white border-cyan-400 opacity-100'
-                  : 'text-slate-400 border-transparent opacity-30 hover:opacity-60'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Content Area */}
-        <div className="mt-12 min-h-96">
-          {activeTab === 'checklists' && (
-            <div className="text-white">
-              <h2 className="text-3xl font-bold mb-6">CHECKLISTS</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white/5 backdrop-blur border border-cyan-400/20 rounded-lg p-6 hover:border-cyan-400/50 transition">
-                  <h3 className="text-cyan-400 font-semibold mb-3">PRE-FLIGHT</h3>
-                  <ul className="space-y-2 text-slate-300 text-sm">
-                    <li>✓ Battery Status</li>
-                    <li>✓ GPS Lock</li>
-                    <li>✓ Sensor Calibration</li>
-                    <li>✓ Propellers Check</li>
-                  </ul>
-                </div>
-                <div className="bg-white/5 backdrop-blur border border-red-500/20 rounded-lg p-6 hover:border-red-500/50 transition">
-                  <h3 className="text-red-400 font-semibold mb-3">ENGINE START</h3>
-                  <ul className="space-y-2 text-slate-300 text-sm">
-                    <li>✓ Motors Online</li>
-                    <li>✓ Thrust Test</li>
-                    <li>✓ Vibration Check</li>
-                    <li>✓ Flight Ready</li>
-                  </ul>
-                </div>
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        {activeTab === 'checklists' && (
+          <div className="text-white">
+            <h2 className="text-4xl font-bold mb-8 tracking-wide">CHECKLISTS</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white/5 backdrop-blur border border-cyan-400/20 rounded-lg p-8 hover:border-cyan-400/50 transition">
+                <h3 className="text-cyan-400 font-semibold mb-4 text-lg">PRE-FLIGHT</h3>
+                <ul className="space-y-3 text-slate-300">
+                  <li className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Battery Status</li>
+                  <li className="flex items-center gap-3"><span className="text-cyan-400">✓</span> GPS Lock</li>
+                  <li className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Sensor Calibration</li>
+                  <li className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Propellers Check</li>
+                </ul>
+              </div>
+              <div className="bg-white/5 backdrop-blur border border-red-500/20 rounded-lg p-8 hover:border-red-500/50 transition">
+                <h3 className="text-red-400 font-semibold mb-4 text-lg">ENGINE START</h3>
+                <ul className="space-y-3 text-slate-300">
+                  <li className="flex items-center gap-3"><span className="text-red-400">✓</span> Motors Online</li>
+                  <li className="flex items-center gap-3"><span className="text-red-400">✓</span> Thrust Test</li>
+                  <li className="flex items-center gap-3"><span className="text-red-400">✓</span> Vibration Check</li>
+                  <li className="flex items-center gap-3"><span className="text-red-400">✓</span> Flight Ready</li>
+                </ul>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'emergencies' && (
-            <div className="text-white">
-              <h2 className="text-3xl font-bold mb-6 text-red-500">EMERGENCIES</h2>
-              <p className="text-slate-300">Emergency procedures coming soon...</p>
+        {activeTab === 'emergencies' && (
+          <div className="text-white">
+            <h2 className="text-4xl font-bold mb-8 tracking-wide text-red-500">EMERGENCIES</h2>
+            <div className="bg-white/5 backdrop-blur border border-red-500/20 rounded-lg p-8">
+              <p className="text-slate-300 text-lg">Emergency procedures coming soon...</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'fuel' && (
-            <div className="text-white">
-              <h2 className="text-3xl font-bold mb-6">FUEL</h2>
-              <p className="text-slate-300">Fuel management system coming soon...</p>
+        {activeTab === 'fuel' && (
+          <div className="text-white">
+            <h2 className="text-4xl font-bold mb-8 tracking-wide">FUEL</h2>
+            <div className="bg-white/5 backdrop-blur border border-cyan-400/20 rounded-lg p-8">
+              <p className="text-slate-300 text-lg">Fuel management system coming soon...</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'range' && (
-            <div className="text-white">
-              <h2 className="text-3xl font-bold mb-6">RANGE</h2>
-              <p className="text-slate-300">Range calculation system coming soon...</p>
+        {activeTab === 'range' && (
+          <div className="text-white">
+            <h2 className="text-4xl font-bold mb-8 tracking-wide">RANGE</h2>
+            <div className="bg-white/5 backdrop-blur border border-cyan-400/20 rounded-lg p-8">
+              <p className="text-slate-300 text-lg">Range calculation system coming soon...</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {activeTab === 'wind' && (
-            <div className="text-white">
-              <h2 className="text-3xl font-bold mb-6">WIND</h2>
-              <p className="text-slate-300">Wind data analysis coming soon...</p>
+        {activeTab === 'wind' && (
+          <div className="text-white">
+            <h2 className="text-4xl font-bold mb-8 tracking-wide">WIND</h2>
+            <div className="bg-white/5 backdrop-blur border border-cyan-400/20 rounded-lg p-8">
+              <p className="text-slate-300 text-lg">Wind data analysis coming soon...</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
