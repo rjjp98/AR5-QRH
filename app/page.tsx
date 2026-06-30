@@ -14,7 +14,7 @@ export default function Home() {
     { id: 'wind', label: 'WIND' },
   ];
 
-  const handleTabChange = (tabId) => {
+  const handleTabChange = (tabId: string) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setActiveTab(tabId);
