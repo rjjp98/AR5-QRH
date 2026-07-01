@@ -16,11 +16,18 @@ const NAV_TABS: { id: PageType; label: string }[] = [
   { id: 'range', label: '📡 Range' },
 ];
 
+const WIND_LIMITS = {
+  maxHeadwind: 25,
+  maxCrosswind: 14,
+  maxTailwind: 5,
+  maxCruise: 35,
+} as const;
+
 const AR5_LIMITS = [
-  { label: 'Max Headwind', value: '25 kts (gusts 30)' },
-  { label: 'Max Crosswind', value: '14 kts (gusts 17)' },
-  { label: 'Max Tailwind', value: '5 kts' },
-  { label: 'Max Cruise Wind', value: '35 kts' },
+  { label: 'Max Headwind', value: `${WIND_LIMITS.maxHeadwind} kts (gusts 30)` },
+  { label: 'Max Crosswind', value: `${WIND_LIMITS.maxCrosswind} kts (gusts 17)` },
+  { label: 'Max Tailwind', value: `${WIND_LIMITS.maxTailwind} kts` },
+  { label: 'Max Cruise Wind', value: `${WIND_LIMITS.maxCruise} kts` },
   { label: 'Temp Range', value: '-10 to +40 °C' },
   { label: 'Cruise IAS < 150 kg', value: '2700 cm/s' },
   { label: 'Cruise IAS > 150 kg', value: '2800 cm/s' },
@@ -28,6 +35,12 @@ const AR5_LIMITS = [
   { label: 'Min Loiter Radius', value: '250 m' },
   { label: 'GPS Sats Required', value: '> 6 per sensor' },
 ];
+
+function toHHMM(h: number): string {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return `${hh}h ${mm.toString().padStart(2, '0')}m`;
+}
 
 /* ────────────────────────────────────────────────
    Fuel & Endurance Calculator
@@ -43,11 +56,6 @@ function FuelCalculator() {
     const res = parseFloat(reserveFuel) || 0;
     if (!f || !r || f <= 0 || r <= 0) return null;
     const usable = Math.max(0, f - res);
-    const toHHMM = (h: number) => {
-      const hh = Math.floor(h);
-      const mm = Math.round((h - hh) * 60);
-      return `${hh}h ${mm.toString().padStart(2, '0')}m`;
-    };
     return {
       usable: usable.toFixed(1),
       enduranceFull: toHHMM(f / r),
@@ -123,9 +131,9 @@ function WindCalculator() {
     const tailwind = headwindRaw < 0 ? -headwindRaw : 0;
     const crosswind = Math.abs(crosswindRaw);
     const crosswindDir = crosswindRaw >= 0 ? 'from right' : 'from left';
-    const cwOk = crosswind <= 14;
-    const hwOk = headwind <= 25;
-    const twOk = tailwind <= 5;
+    const cwOk = crosswind <= WIND_LIMITS.maxCrosswind;
+    const hwOk = headwind <= WIND_LIMITS.maxHeadwind;
+    const twOk = tailwind <= WIND_LIMITS.maxTailwind;
     return { headwind, tailwind, crosswind, crosswindDir, cwOk, hwOk, twOk, allOk: cwOk && hwOk && twOk };
   }, [windDir, windSpeed, rwHeading]);
 
@@ -162,21 +170,21 @@ function WindCalculator() {
                 <p className={`text-2xl font-black ${calc.hwOk ? 'text-green-400' : 'text-red-400'}`}>
                   {calc.headwind.toFixed(1)} kts
                 </p>
-                <p className="text-slate-500 text-xs mt-1">Limit: 25 kts {calc.hwOk ? '✓' : '⚠'}</p>
+                <p className="text-slate-500 text-xs mt-1">Limit: {WIND_LIMITS.maxHeadwind} kts {calc.hwOk ? '✓' : '⚠'}</p>
               </div>
               <div className={`bg-slate-900/60 rounded-lg p-4 border text-center ${calc.twOk ? 'border-slate-700' : 'border-red-500'}`}>
                 <p className="text-slate-400 text-xs mb-1">Tailwind</p>
                 <p className={`text-2xl font-black ${calc.tailwind > 0 ? (calc.twOk ? 'text-yellow-400' : 'text-red-400') : 'text-slate-500'}`}>
                   {calc.tailwind.toFixed(1)} kts
                 </p>
-                <p className="text-slate-500 text-xs mt-1">Limit: 5 kts {calc.twOk ? '✓' : '⚠'}</p>
+                <p className="text-slate-500 text-xs mt-1">Limit: {WIND_LIMITS.maxTailwind} kts {calc.twOk ? '✓' : '⚠'}</p>
               </div>
               <div className={`bg-slate-900/60 rounded-lg p-4 border text-center ${calc.cwOk ? 'border-slate-700' : 'border-red-500'}`}>
                 <p className="text-slate-400 text-xs mb-1">Crosswind ({calc.crosswindDir})</p>
                 <p className={`text-2xl font-black ${calc.cwOk ? 'text-yellow-400' : 'text-red-400'}`}>
                   {calc.crosswind.toFixed(1)} kts
                 </p>
-                <p className="text-slate-500 text-xs mt-1">Limit: 14 kts {calc.cwOk ? '✓' : '⚠'}</p>
+                <p className="text-slate-500 text-xs mt-1">Limit: {WIND_LIMITS.maxCrosswind} kts {calc.cwOk ? '✓' : '⚠'}</p>
               </div>
             </div>
             <div className={`rounded-lg p-4 border text-center ${calc.allOk ? 'bg-green-900/20 border-green-700' : 'bg-red-900/20 border-red-700'}`}>
@@ -191,7 +199,7 @@ function WindCalculator() {
 
         <div className="mt-4 bg-slate-900/40 rounded p-3 text-xs text-slate-400">
           <span className="font-bold text-slate-300">AR5 MK3 Limits: </span>
-          Headwind ≤25 kts (gusts 30) · Crosswind ≤14 kts (gusts 17) · Tailwind ≤5 kts · Max Cruise ≤35 kts
+          Headwind ≤{WIND_LIMITS.maxHeadwind} kts (gusts 30) · Crosswind ≤{WIND_LIMITS.maxCrosswind} kts (gusts 17) · Tailwind ≤{WIND_LIMITS.maxTailwind} kts · Max Cruise ≤{WIND_LIMITS.maxCruise} kts
         </div>
       </div>
     </div>
@@ -217,11 +225,6 @@ function RangeCalculator() {
     const enduranceH = usable / r;
     const rangeNm = enduranceH * spd;
     const rangeKm = rangeNm * 1.852;
-    const toHHMM = (h: number) => {
-      const hh = Math.floor(h);
-      const mm = Math.round((h - hh) * 60);
-      return `${hh}h ${mm.toString().padStart(2, '0')}m`;
-    };
     return {
       endurance: toHHMM(enduranceH),
       rangeNm: rangeNm.toFixed(0),
