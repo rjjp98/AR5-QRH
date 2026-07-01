@@ -99,7 +99,9 @@ export default function NocChecklist() {
     const element = document.getElementById('noc-printable');
     if (!element) return;
     const html2pdf = (await import('html2pdf.js')).default;
-    const filename = `NOC_${data.header.aircraftID || 'AR5'}_${data.header.mission || 'mission'}.pdf`;
+    const aircraft = data.header.aircraftID.trim() || 'UNKNOWN_AIRCRAFT';
+    const mission = data.header.mission.trim() || 'UNKNOWN_MISSION';
+    const filename = `NOC_${aircraft}_${mission}.pdf`;
     html2pdf()
       .set({
         margin: 10,
