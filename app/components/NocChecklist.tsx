@@ -56,7 +56,14 @@ export default function NocChecklist() {
     setIsClient(true);
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setData(JSON.parse(saved) as NocData);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<NocData>;
+        setData({
+          header: { ...DEFAULT_DATA.header, ...(parsed.header ?? {}) },
+          flightResume: { ...DEFAULT_DATA.flightResume, ...(parsed.flightResume ?? {}) },
+          fields: parsed.fields ?? {},
+        });
+      }
     } catch {
       // ignore parse errors
     }
