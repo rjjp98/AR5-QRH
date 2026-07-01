@@ -2,39 +2,94 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-interface ChecklistField {
+interface ChecklistItem {
   id: string;
   label: string;
   type: 'checkbox' | 'text' | 'number';
-  section: string;
-  value: string | boolean;
 }
 
-export default function NOC() {
-  const [activeTab, setActiveTab] = useState('noc');
-  const [formData, setFormData] = useState<Record<string, string | boolean>>({});
-  const [checklist, setChecklist] = useState<ChecklistField[]>([]);
-  const [pdfLoaded, setPdfLoaded] = useState(false);
-  const [pdfName, setPdfName] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pdfjsRef = useRef<any>(null);
-  const html2pdfRef = useRef<any>(null);
+interface ChecklistTemplate {
+  id: string;
+  name: string;
+  description: string;
+  items: ChecklistItem[];
+}
 
-  // Initialize on client side only
+interface ChecklistData {
+  templateId: string;
+  data: Record<string, string | boolean>;
+}
+
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('checklists');
+  const [selectedChecklist, setSelectedChecklist] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, string | boolean>>({});
+  const [savedChecklists, setSavedChecklists] = useState<ChecklistData[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  // NOC Checklist Template
+  const nocTemplate: ChecklistTemplate = {
+    id: 'noc',
+    name: 'NOC - Normal Operations Checklist',
+    description: 'Normal Operations Checklist para o AR5 MK3',
+    items: [
+      // PRE-FLIGHT CHECKS
+      { id: 'noc-1', label: 'Aircraft exterior inspection completed', type: 'checkbox' },
+      { id: 'noc-2', label: 'Flight controls checked and free', type: 'checkbox' },
+      { id: 'noc-3', label: 'Fuel quantity verified', type: 'checkbox' },
+      { id: 'noc-4', label: 'Engine oil level verified', type: 'checkbox' },
+      { id: 'noc-5', label: 'Landing gear inspection completed', type: 'checkbox' },
+      { id: 'noc-6', label: 'Battery voltage checked', type: 'checkbox' },
+      { id: 'noc-7', label: 'Avionics systems verified', type: 'checkbox' },
+      { id: 'noc-8', label: 'Weight and balance calculated', type: 'text' },
+      
+      // ENGINE START
+      { id: 'noc-9', label: 'Engine start sequence initiated', type: 'checkbox' },
+      { id: 'noc-10', label: 'Engine instruments in green', type: 'checkbox' },
+      { id: 'noc-11', label: 'Oil temperature normal', type: 'checkbox' },
+      { id: 'noc-12', label: 'Oil pressure normal', type: 'checkbox' },
+      
+      // TAXI
+      { id: 'noc-13', label: 'Flight surfaces responsive', type: 'checkbox' },
+      { id: 'noc-14', label: 'Brakes tested', type: 'checkbox' },
+      { id: 'noc-15', label: 'Navigation lights on', type: 'checkbox' },
+      
+      // TAKEOFF
+      { id: 'noc-16', label: 'Runway clear', type: 'checkbox' },
+      { id: 'noc-17', label: 'Flight plan filed', type: 'checkbox' },
+      { id: 'noc-18', label: 'Transponder set to flight plan', type: 'checkbox' },
+      
+      // FLIGHT
+      { id: 'noc-19', label: 'Cruise altitude reached', type: 'number' },
+      { id: 'noc-20', label: 'Heading verified', type: 'number' },
+      
+      // LANDING
+      { id: 'noc-21', label: 'Landing gear down and locked', type: 'checkbox' },
+      { id: 'noc-22', label: 'Flight surfaces configured for landing', type: 'checkbox' },
+      { id: 'noc-23', label: 'Landing clearance received', type: 'checkbox' },
+      
+      // POST-FLIGHT
+      { id: 'noc-24', label: 'Aircraft parked and secured', type: 'checkbox' },
+      { id: 'noc-25', label: 'Engine shutdown procedure completed', type: 'checkbox' },
+      { id: 'noc-26', label: 'Flight log updated', type: 'checkbox' },
+    ],
+  };
+
+  const checklistTemplates: ChecklistTemplate[] = [nocTemplate];
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const tabs = [
-    { id: 'checklists', label: 'CHECKLISTS' },
-    { id: 'noc', label: 'NOC' },
-    { id: 'emergencies', label: 'EMERGENCIES' },
-  ];
-
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
+    setSelectedChecklist(null);
+    setFormData({});
+  };
+
+  const handleChecklistSelect = (checklistId: string) => {
+    setSelectedChecklist(checklistId);
+    setFormData({});
   };
 
   const handleInputChange = (key: string, value: string | boolean) => {
@@ -44,415 +99,265 @@ export default function NOC() {
     }));
   };
 
-  const parseChecklistFromPDF = async (file: File) => {
-    setIsProcessing(true);
-    try {
-      // Lazy load pdfjs only when needed
-      if (!pdfjsRef.current) {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsRef.current = pdfjsLib;
-        pdfjsRef.current.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsRef.current.getDocument({ data: arrayBuffer }).promise;
-
-      const extractedFields: ChecklistField[] = [];
-      let fieldId = 0;
-
-      // Extract text from all pages
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const text = textContent.items.map((item: any) => item.str).join(' ');
-
-        // Parse checklist items
-        const lines = text.split(/\n|\r/);
-        let currentSection = 'General';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          
-          // Detect section headers
-          if (trimmed.match(/^(PRE-FLIGHT|ENGINE START|TAXI|TAKEOFF|PRE-LANDING|POST-FLIGHT|FLIGHT CHECKS|PILOT HANDOVER)/i)) {
-            currentSection = trimmed;
-          }
-
-          // Detect checklist items
-          const itemMatch = trimmed.match(/^(\d+[a-z]?|\-)\s+(.+?)(\s+(\(.*?\)|\[.*?\]|\d+))?$/);
-          if (itemMatch && trimmed.length > 3) {
-            const label = itemMatch[2].trim();
-            if (label.length > 2) {
-              extractedFields.push({
-                id: `field_${fieldId++}`,
-                label: label,
-                type: 'checkbox',
-                section: currentSection,
-                value: false,
-              });
-            }
-          }
-        }
-      }
-
-      if (extractedFields.length === 0) {
-        alert('Não consegui extrair campos do PDF. Tenta com um PDF diferente.');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Remove duplicates
-      const uniqueFields = Array.from(
-        new Map(extractedFields.map((f) => [f.label, f])).values()
-      );
-
-      setChecklist(uniqueFields);
-      setPdfName(file.name);
-      setPdfLoaded(true);
-      setFormData({});
-    } catch (error) {
-      console.error('Erro ao processar PDF:', error);
-      alert('Erro ao processar PDF. Tenta novamente.');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleSaveChecklist = () => {
+    if (!selectedChecklist) return;
+    
+    const newSavedChecklist: ChecklistData = {
+      templateId: selectedChecklist,
+      data: formData,
+    };
+    
+    setSavedChecklists([...savedChecklists, newSavedChecklist]);
+    alert('Checklist guardado com sucesso!');
+    setSelectedChecklist(null);
+    setFormData({});
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      parseChecklistFromPDF(file);
-    } else {
-      alert('Por favor seleciona um ficheiro PDF válido.');
-    }
-  };
-
-  const exportPDF = async () => {
-    const element = document.getElementById('noc-content');
-    if (!element) return;
-
+  const handleExportPDF = async () => {
+    if (!selectedChecklist) return;
+    
     try {
-      // Lazy load html2pdf only when needed
-      if (!html2pdfRef.current) {
-        const html2pdf = await import('html2pdf.js');
-        html2pdfRef.current = html2pdf.default;
-      }
-
+      const html2pdf = await import('html2pdf.js');
+      const element = document.getElementById('checklist-content');
+      
+      if (!element) return;
+      
       const opt = {
         margin: 5,
-        filename: `AR5_NOC_${new Date().toISOString().split('T')[0]}.pdf`,
+        filename: `AR5_Checklist_${new Date().toISOString().split('T')[0]}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
       };
-      html2pdfRef.current().set(opt).from(element).save();
+      
+      html2pdf.default().set(opt).from(element).save();
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
       alert('Erro ao exportar PDF. Tenta novamente.');
     }
   };
 
-  const groupedChecklist = checklist.reduce(
-    (acc, field) => {
-      if (!acc[field.section]) {
-        acc[field.section] = [];
-      }
-      acc[field.section].push(field);
-      return acc;
-    },
-    {} as Record<string, ChecklistField[]>
-  );
-
   if (!isClient) {
     return null;
   }
 
+  const currentTemplate = checklistTemplates.find((t) => t.id === selectedChecklist);
+
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Dark overlay */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#000000] via-[#0a0a0a] to-[#000000]" />
-
-      {/* Dynamic glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/5 rounded-full blur-3xl animate-pulse z-0" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse z-0" />
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <header className="relative z-40 border-b border-red-600/10 backdrop-blur-md sticky top-0">
-        <div className="max-w-full mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex-shrink-0">
-            <svg width="120" height="30" viewBox="0 0 140 40" className="fill-red-600 drop-shadow-lg">
-              <text x="0" y="32" fontSize="28" fontWeight="bold" letterSpacing="2">
-                TEKEVER
-              </text>
-            </svg>
+      <header className="border-b border-slate-700 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-black text-white tracking-tight">AR5 MK3 QRH</h1>
+              <p className="text-slate-400 text-sm">Quick Reference Handbook</p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-300 font-semibold">Tekever Flight Operations</p>
+              <p className="text-slate-500 text-xs">Flight Operations Commander</p>
+            </div>
           </div>
-
-          <nav className="flex gap-4 justify-center flex-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`font-black text-xs tracking-widest transition-all duration-300 uppercase whitespace-nowrap border-b-2 pb-2 ${
-                  activeTab === tab.id
-                    ? 'text-red-500 border-red-500 shadow-lg shadow-red-500/50'
-                    : 'text-slate-400 border-transparent hover:text-red-400 hover:border-red-600/50'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
         </div>
       </header>
 
+      {/* Navigation Tabs */}
+      <nav className="border-b border-slate-700 bg-slate-800/50 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-8">
+            <button
+              onClick={() => handleTabChange('checklists')}
+              className={`py-4 px-2 font-bold text-sm uppercase tracking-widest transition-all border-b-2 ${
+                activeTab === 'checklists'
+                  ? 'text-red-500 border-red-500'
+                  : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500'
+              }`}
+            >
+              ✓ Checklists
+            </button>
+            <button
+              onClick={() => handleTabChange('saved')}
+              className={`py-4 px-2 font-bold text-sm uppercase tracking-widest transition-all border-b-2 ${
+                activeTab === 'saved'
+                  ? 'text-red-500 border-red-500'
+                  : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500'
+              }`}
+            >
+              📋 Saved Data
+            </button>
+            <button
+              onClick={() => handleTabChange('help')}
+              className={`py-4 px-2 font-bold text-sm uppercase tracking-widest transition-all border-b-2 ${
+                activeTab === 'help'
+                  ? 'text-red-500 border-red-500'
+                  : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500'
+              }`}
+            >
+              ℹ️ Help
+            </button>
+          </div>
+        </div>
+      </nav>
+
       {/* Content */}
-      <div className="relative z-20 mx-auto px-4 py-6">
-        {activeTab === 'noc' && (
-          <div className="text-white max-w-5xl mx-auto">
-            {!pdfLoaded ? (
-              // PDF Upload Section
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-2xl border border-cyan-500/20 rounded-xl p-8 shadow-2xl text-center">
-                  <h2 className="text-3xl font-black text-cyan-400 mb-4">UPLOAD CHECKLIST PDF</h2>
-                  <p className="text-slate-300 mb-8">
-                    Carrega o teu ficheiro PDF de checklist e vamos extrair todos os campos automaticamente.
-                    <br />
-                    Podes atualizar o PDF sempre que quiseres!
-                  </p>
-
-                  <div
-                    className="border-2 border-dashed border-cyan-500/50 rounded-xl p-12 mb-6 hover:border-cyan-500 hover:bg-cyan-500/5 transition cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <div className="text-5xl mb-4">📄</div>
-                    <p className="text-xl font-bold text-cyan-400 mb-2">Clica ou arrasta um PDF</p>
-                    <p className="text-slate-400">Suportamos ficheiros PDF até 50MB</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </div>
-
-                  {isProcessing && (
-                    <div className="text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-                      <p className="text-slate-300 mt-3">A processar PDF...</p>
-                    </div>
-                  )}
-
-                  <p className="text-xs text-slate-500 mt-4">
-                    O sistema irá extrair todos os itens de checklist do PDF automaticamente
-                  </p>
-                </div>
-
-                {/* Info Section */}
-                <div className="bg-gradient-to-br from-red-600/8 to-red-600/3 backdrop-blur-2xl border border-red-600/30 rounded-xl p-8 shadow-2xl">
-                  <h3 className="text-xl font-black text-red-400 mb-4">🎯 Como Funciona</h3>
-                  <ul className="space-y-3 text-slate-300">
-                    <li className="flex gap-3">
-                      <span className="text-red-500 font-bold">1.</span>
-                      <span>Faz upload do teu PDF de checklist</span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="text-red-500 font-bold">2.</span>
-                      <span>O sistema extrai automaticamente todos os campos</span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="text-red-500 font-bold">3.</span>
-                      <span>Preenche os campos no formulário interativo</span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="text-red-500 font-bold">4.</span>
-                      <span>Exporta um PDF com todos os dados preenchidos</span>
-                    </li>
-                    <li className="flex gap-3">
-                      <span className="text-red-500 font-bold">5.</span>
-                      <span>Quando houver updates, carrega o novo PDF e pronto! 🚀</span>
-                    </li>
-                  </ul>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Checklists Tab */}
+        {activeTab === 'checklists' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Checklist Selection Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 sticky top-20">
+                <h2 className="text-white font-bold mb-4 uppercase tracking-widest text-sm">Checklists</h2>
+                <div className="space-y-2">
+                  {checklistTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleChecklistSelect(template.id)}
+                      className={`w-full text-left px-4 py-3 rounded transition ${
+                        selectedChecklist === template.id
+                          ? 'bg-red-600 text-white font-bold'
+                          : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                      }`}
+                    >
+                      <div className="font-semibold">{template.name}</div>
+                      <div className="text-xs opacity-75">{template.items.length} items</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-            ) : (
-              // Checklist Form Section
-              <div>
-                {/* Header with PDF info and Export buttons */}
-                <div className="mb-6 bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-2xl border border-cyan-500/20 rounded-xl p-6 shadow-2xl">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl font-black text-cyan-400">📄 {pdfName}</h2>
-                      <p className="text-slate-400 text-sm mt-1">
-                        {checklist.length} campos extraídos • {Object.keys(groupedChecklist).length} secções
-                      </p>
-                    </div>
+            </div>
 
-                    <div className="flex gap-3 flex-wrap">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg shadow-lg transition text-sm"
-                      >
-                        🔄 NOVO PDF
-                      </button>
-                      <button
-                        onClick={exportPDF}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-lg transition text-sm"
-                      >
-                        📥 EXPORT PDF
-                      </button>
-                      <button
-                        onClick={() => window.print()}
-                        className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg shadow-lg transition text-sm"
-                      >
-                        🖨️ PRINT
-                      </button>
+            {/* Checklist Content */}
+            <div className="lg:col-span-3">
+              {selectedChecklist && currentTemplate ? (
+                <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 border-b border-slate-700">
+                    <h2 className="text-2xl font-black text-white mb-2">{currentTemplate.name}</h2>
+                    <p className="text-slate-400 text-sm">{currentTemplate.description}</p>
+                  </div>
+
+                  {/* Checklist Items */}
+                  <div id="checklist-content" className="p-6">
+                    <div className="space-y-3">
+                      {currentTemplate.items.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-4 p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition"
+                        >
+                          <span className="text-red-500 font-bold min-w-[30px]">{idx + 1}.</span>
+                          <span className="text-slate-200 flex-1">{item.label}</span>
+                          
+                          {item.type === 'checkbox' ? (
+                            <input
+                              type="checkbox"
+                              checked={(formData[item.id] as boolean) || false}
+                              onChange={(e) => handleInputChange(item.id, e.target.checked)}
+                              className="w-5 h-5 rounded cursor-pointer accent-red-500"
+                            />
+                          ) : (
+                            <input
+                              type={item.type}
+                              placeholder={item.type === 'number' ? '0' : 'Enter value'}
+                              value={(formData[item.id] as string) || ''}
+                              onChange={(e) => handleInputChange(item.id, e.target.value)}
+                              className="px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-500 text-sm w-32"
+                            />
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
 
-                {/* Hidden input for file upload */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-
-                {/* Checklist Content */}
-                <div id="noc-content" className="space-y-6">
-                  {Object.entries(groupedChecklist).map(([section, fields]) => (
-                    <div
-                      key={section}
-                      className="bg-gradient-to-br from-cyan-600/8 to-cyan-600/3 backdrop-blur-2xl border border-cyan-600/30 rounded-xl p-6 shadow-2xl"
+                  {/* Action Buttons */}
+                  <div className="bg-slate-700/50 border-t border-slate-700 p-6 flex gap-3 justify-end">
+                    <button
+                      onClick={handleExportPDF}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition"
                     >
-                      <div className="flex items-center gap-3 mb-4 sticky top-24 z-20 bg-black/50 -mx-6 px-6 py-2 rounded-t-xl">
-                        <div className="w-1 h-6 bg-gradient-to-b from-cyan-400 to-cyan-600"></div>
-                        <h2 className="text-lg font-black text-cyan-400">{section}</h2>
-                        <span className="ml-auto text-xs text-cyan-400 font-bold bg-cyan-500/20 px-3 py-1 rounded">
-                          {fields.length} itens
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {fields.map((field, idx) => (
-                          <div
-                            key={field.id}
-                            className="flex items-center gap-3 py-2 px-3 border-b border-slate-700/30 hover:bg-white/5 transition group"
-                          >
-                            <span className="text-cyan-400 font-bold min-w-[30px] text-sm">
-                              {idx + 1}
-                            </span>
-                            <span className="text-slate-200 text-sm flex-1 group-hover:text-cyan-300 transition">
-                              {field.label}
-                            </span>
-                            {field.type === 'checkbox' ? (
-                              <input
-                                type="checkbox"
-                                checked={
-                                  (formData[field.id] as boolean) || false
-                                }
-                                onChange={(e) =>
-                                  handleInputChange(field.id, e.target.checked)
-                                }
-                                className="w-4 h-4 cursor-pointer accent-red-500"
-                              />
-                            ) : (
-                              <input
-                                type={field.type}
-                                placeholder="Valor"
-                                value={
-                                  (formData[field.id] as string) || ''
-                                }
-                                onChange={(e) =>
-                                  handleInputChange(field.id, e.target.value)
-                                }
-                                className="px-2 py-1 bg-white/10 border border-cyan-500/30 rounded text-white placeholder-slate-500 text-xs w-24"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Final Signature Section */}
-                  <div className="bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-2xl border border-cyan-500/20 rounded-xl p-6 shadow-2xl">
-                    <h2 className="text-lg font-black text-cyan-400 mb-4">ASSINATURA & FINALIZAÇÃO</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-cyan-400 text-xs font-bold">Data</label>
-                        <input
-                          type="date"
-                          value={
-                            (formData['final_date'] as string) || ''
-                          }
-                          onChange={(e) =>
-                            handleInputChange('final_date', e.target.value)
-                          }
-                          className="w-full px-2 py-1 bg-white/10 border border-cyan-500/30 rounded text-white mt-1 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-cyan-400 text-xs font-bold">Hora</label>
-                        <input
-                          type="time"
-                          value={
-                            (formData['final_time'] as string) || ''
-                          }
-                          onChange={(e) =>
-                            handleInputChange('final_time', e.target.value)
-                          }
-                          className="w-full px-2 py-1 bg-white/10 border border-cyan-500/30 rounded text-white mt-1 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-cyan-400 text-xs font-bold">RPIC</label>
-                        <input
-                          type="text"
-                          placeholder="Nome"
-                          value={
-                            (formData['final_rpic'] as string) || ''
-                          }
-                          onChange={(e) =>
-                            handleInputChange('final_rpic', e.target.value)
-                          }
-                          className="w-full px-2 py-1 bg-white/10 border border-cyan-500/30 rounded text-white mt-1 text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <label className="text-cyan-400 text-xs font-bold">
-                        Observações Finais
-                      </label>
-                      <textarea
-                        placeholder="Observações..."
-                        value={
-                          (formData['final_observations'] as string) || ''
-                        }
-                        onChange={(e) =>
-                          handleInputChange('final_observations', e.target.value)
-                        }
-                        className="w-full px-2 py-2 bg-white/10 border border-cyan-500/30 rounded text-white mt-1 text-xs h-12"
-                      />
-                    </div>
+                      📥 Export PDF
+                    </button>
+                    <button
+                      onClick={handleSaveChecklist}
+                      className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition"
+                    >
+                      💾 Save Checklist
+                    </button>
                   </div>
                 </div>
+              ) : (
+                <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
+                  <p className="text-slate-400 text-lg">Seleciona um checklist para começar</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Saved Data Tab */}
+        {activeTab === 'saved' && (
+          <div>
+            <h2 className="text-2xl font-black text-white mb-6">Saved Checklists</h2>
+            {savedChecklists.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {savedChecklists.map((saved, idx) => {
+                  const template = checklistTemplates.find((t) => t.id === saved.templateId);
+                  return (
+                    <div key={idx} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <h3 className="text-white font-bold mb-2">{template?.name}</h3>
+                      <p className="text-slate-400 text-sm mb-3">
+                        {Object.keys(saved.data).length} fields filled
+                      </p>
+                      <button
+                        onClick={() => {
+                          setActiveTab('checklists');
+                          handleChecklistSelect(saved.templateId);
+                          setFormData(saved.data);
+                        }}
+                        className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded transition"
+                      >
+                        View & Edit
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
+                <p className="text-slate-400">No saved checklists yet</p>
               </div>
             )}
           </div>
         )}
 
-        {activeTab !== 'noc' && (
-          <div className="bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-2xl border border-cyan-500/20 rounded-2xl p-12 shadow-2xl text-center text-slate-300 max-w-5xl mx-auto">
-            <p className="text-xl">Coming soon...</p>
+        {/* Help Tab */}
+        {activeTab === 'help' && (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+            <h2 className="text-2xl font-black text-white mb-6">How to Use</h2>
+            <div className="space-y-4 text-slate-300">
+              <div>
+                <h3 className="text-red-500 font-bold mb-2">1. Select a Checklist</h3>
+                <p>Choose from the available checklists on the left sidebar.</p>
+              </div>
+              <div>
+                <h3 className="text-red-500 font-bold mb-2">2. Fill the Checklist</h3>
+                <p>Complete all items by checking boxes or entering required information.</p>
+              </div>
+              <div>
+                <h3 className="text-red-500 font-bold mb-2">3. Save or Export</h3>
+                <p>Save your data for later or export as PDF for printing.</p>
+              </div>
+              <div>
+                <h3 className="text-red-500 font-bold mb-2">4. Access Saved Data</h3>
+                <p>View all your saved checklists in the "Saved Data" tab.</p>
+              </div>
+            </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Footer */}
-      <footer className="relative z-20 border-t border-red-600/10 mt-10 py-6 text-center text-slate-600 text-xs">
+      <footer className="border-t border-slate-700 mt-12 py-6 text-center text-slate-600 text-xs">
         <p>AR5 MK3 QRH © 2026 | Tekever Flight Operations | Confidential</p>
       </footer>
     </div>
