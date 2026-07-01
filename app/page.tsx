@@ -2,19 +2,98 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import NocChecklist from './components/NocChecklist';
 
 type PageType = 'home' | 'dashboard' | 'checklists' | 'fuel' | 'wind' | 'range';
 type ChecklistType = 'noc' | 'pdi';
+type NOCSection = 'preflight' | 'prelanding' | 'handover';
+type FormValue = string | boolean;
+
+interface FuelEntry {
+  date: string;
+  quantity: number;
+  type: string;
+}
+
+interface WindEntry {
+  time: string;
+  speed: number;
+  direction: number;
+  gusts: number;
+}
+
+interface RangeEntry {
+  distance: number;
+  battery: number;
+  altitude: number;
+  time: string;
+}
 
 export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistType>('noc');
+  const [nocSection, setNocSection] = useState<NOCSection>('preflight');
   const [isClient, setIsClient] = useState(false);
+  const [formData, setFormData] = useState<Record<string, FormValue>>({});
+  const [fuelLog, setFuelLog] = useState<FuelEntry[]>([
+    { date: '2026-07-01', quantity: 120, type: 'Avgas' },
+    { date: '2026-06-30', quantity: 115, type: 'Avgas' },
+  ]);
+  const [windLog, setWindLog] = useState<WindEntry[]>([
+    { time: '08:00', speed: 8, direction: 180, gusts: 12 },
+    { time: '09:00', speed: 10, direction: 185, gusts: 15 },
+    { time: '10:00', speed: 12, direction: 190, gusts: 18 },
+  ]);
+  const [rangeLog, setRangeLog] = useState<RangeEntry[]>([
+    { distance: 0, battery: 100, altitude: 0, time: '00:00' },
+    { distance: 5, battery: 95, altitude: 150, time: '00:15' },
+    { distance: 12, battery: 88, altitude: 300, time: '00:30' },
+    { distance: 20, battery: 80, altitude: 500, time: '00:45' },
+  ]);
+  const [newFuel, setNewFuel] = useState({ date: '', quantity: 0, type: 'Avgas' });
+  const [newWind, setNewWind] = useState({ time: '', speed: 0, direction: 0, gusts: 0 });
+  const [newRange, setNewRange] = useState({ distance: 0, battery: 0, altitude: 0, time: '' });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleInputChange = (key: string, value: FormValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const getTextValue = (key: string) => {
+    const value = formData[key];
+    return typeof value === 'string' ? value : '';
+  };
+
+  const getCheckboxValue = (key: string) => {
+    const value = formData[key];
+    return typeof value === 'boolean' ? value : false;
+  };
+
+  const handleAddFuel = () => {
+    if (newFuel.date && newFuel.quantity > 0) {
+      setFuelLog([...fuelLog, newFuel]);
+      setNewFuel({ date: '', quantity: 0, type: 'Avgas' });
+    }
+  };
+
+  const handleAddWind = () => {
+    if (newWind.time && newWind.speed >= 0) {
+      setWindLog([...windLog, newWind]);
+      setNewWind({ time: '', speed: 0, direction: 0, gusts: 0 });
+    }
+  };
+
+  const handleAddRange = () => {
+    if (newRange.time && newRange.distance >= 0) {
+      setRangeLog([...rangeLog, newRange]);
+      setNewRange({ distance: 0, battery: 0, altitude: 0, time: '' });
+    }
+  };
 
   if (!isClient) {
     return null;
@@ -87,13 +166,23 @@ export default function Dashboard() {
               <button onClick={() => setSelectedChecklist('pdi')} className={`px-6 py-2 font-bold rounded-lg transition ${selectedChecklist === 'pdi' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}>PDI - Pre-Delivery Inspection</button>
             </div>
             {selectedChecklist === 'noc' && (
-              <NocChecklist />
+              <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
+                <div className="flex border-b border-slate-700 bg-slate-700/50">
+                  <button onClick={() => setNocSection('preflight')} className={`flex-1 py-4 px-4 font-bold transition border-b-2 ${nocSection === 'preflight' ? 'text-red-500 border-red-500' : 'text-slate-300 border-transparent hover:text-white'}`}>Pre-Flight</button>
+                  <button onClick={() => setNocSection('prelanding')} className={`flex-1 py-4 px-4 font-bold transition border-b-2 ${nocSection === 'prelanding' ? 'text-red-500 border-red-500' : 'text-slate-300 border-transparent hover:text-white'}`}>Pre-Landing</button>
+                  <button onClick={() => setNocSection('handover')} className={`flex-1 py-4 px-4 font-bold transition border-b-2 ${nocSection === 'handover' ? 'text-red-500 border-red-500' : 'text-slate-300 border-transparent hover:text-white'}`}>Pilot Handover</button>
+                </div>
+                <div className="p-6">
+                  <input type="text" value={getTextValue('aircraftID')} onChange={(e) => handleInputChange('aircraftID', e.target.value)} className="bg-slate-800 border border-slate-600 rounded px-3 py-1 text-white text-sm" />
+                  <input type="checkbox" checked={getCheckboxValue('noc-0')} onChange={(e) => handleInputChange('noc-0', e.target.checked)} className="ml-4 w-4 h-4 accent-red-500" />
+                </div>
+              </div>
             )}
           </div>
         )}
         {currentPage === 'fuel' && <div className="text-white">Fuel</div>}
-        {currentPage === 'wind' && <div className="text-white">Wind</div>}
-        {currentPage === 'range' && <div className="text-white">Range</div>}
+        {currentPage === 'wind' && <div className="text-white">Wind {windLog.length}</div>}
+        {currentPage === 'range' && <div className="text-white">Range {rangeLog.length}</div>}
       </main>
     </div>
   );
