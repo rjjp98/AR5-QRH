@@ -7,19 +7,35 @@ type FieldValue = string | boolean | number;
 
 interface NocHeader {
   aircraftID: string;
-  gcs: string;
-  tracker: string;
+  date: string;
+  trackerDlId: string;
+  location: string;
+  spControlId: string;
+  missionType: string;
+  nightDay: string;
   rpic: string;
-  mission: string;
   nocVersion: string;
+  nocDate: string;
+  nocReference: string;
 }
 
 interface FlightResume {
-  date: string;
-  departureTime: string;
-  landingTime: string;
-  totalFlightTime: string;
-  remarks: string;
+  takeoffDirection: string;
+  takeoffWind: string;
+  takeoffWeather: string;
+  takeoffWeight: string;
+  systemConfiguration: string;
+  missionDescription: string;
+  landingDirection: string;
+  landingWind: string;
+  landingWeather: string;
+  landingWeightFuel: string;
+  aircraftCondition: string;
+  faultsDetected: string;
+  safetyOccurrences: string;
+  rpicName: string;
+  rpicSign: string;
+  rpicDate: string;
 }
 
 interface NocData {
@@ -42,8 +58,37 @@ const TABS: { id: NocTab; label: string; icon: string }[] = [
 ];
 
 const DEFAULT_DATA: NocData = {
-  header: { aircraftID: '', gcs: '', tracker: '', rpic: '', mission: '', nocVersion: DEFAULT_NOC_VERSION },
-  flightResume: { date: '', departureTime: '', landingTime: '', totalFlightTime: '', remarks: '' },
+  header: {
+    aircraftID: '',
+    date: '',
+    trackerDlId: '',
+    location: '',
+    spControlId: '',
+    missionType: '',
+    nightDay: '',
+    rpic: '',
+    nocVersion: DEFAULT_NOC_VERSION,
+    nocDate: '30-04-2026',
+    nocReference: 'TAS-AR5-ETN-050_00',
+  },
+  flightResume: {
+    takeoffDirection: '',
+    takeoffWind: '',
+    takeoffWeather: '',
+    takeoffWeight: '',
+    systemConfiguration: '',
+    missionDescription: '',
+    landingDirection: '',
+    landingWind: '',
+    landingWeather: '',
+    landingWeightFuel: '',
+    aircraftCondition: '',
+    faultsDetected: '',
+    safetyOccurrences: '',
+    rpicName: '',
+    rpicSign: '',
+    rpicDate: '',
+  },
   fields: {},
 };
 
@@ -109,7 +154,7 @@ export default function NocChecklist() {
     if (!element) return;
     const html2pdf = (await import('html2pdf.js')).default;
     const aircraft = data.header.aircraftID.trim() || 'UNKNOWN_AIRCRAFT';
-    const mission = data.header.mission.trim() || 'UNKNOWN_MISSION';
+    const mission = data.header.missionType.trim() || 'UNKNOWN_MISSION';
     const filename = `NOC_${aircraft}_${mission}.pdf`;
     html2pdf()
       .set({
@@ -131,21 +176,31 @@ export default function NocChecklist() {
 
   if (!isClient) return null;
 
-  const headerFields: { key: keyof NocHeader; label: string }[] = [
-    { key: 'nocVersion', label: 'NOC Version' },
-    { key: 'aircraftID', label: 'Aircraft ID' },
-    { key: 'gcs', label: 'GCS' },
-    { key: 'tracker', label: 'Tracker' },
-    { key: 'rpic', label: 'RPIC' },
-    { key: 'mission', label: 'Mission' },
+  const headerFields: { key: keyof NocHeader; label: string; type?: string }[] = [
+    { key: 'aircraftID', label: 'Aircraft ID #', type: 'text' },
+    { key: 'date', label: 'Date', type: 'date' },
+    { key: 'trackerDlId', label: 'Tracker / DL ID #', type: 'text' },
+    { key: 'location', label: 'Location', type: 'text' },
+    { key: 'spControlId', label: 'SP Control ID #', type: 'text' },
+    { key: 'missionType', label: 'Mission Type', type: 'text' },
+    { key: 'nightDay', label: 'Night / Day', type: 'text' },
+    { key: 'rpic', label: 'RPIC', type: 'text' },
   ];
 
   const resumeFields: { key: keyof FlightResume; label: string; type: string }[] = [
-    { key: 'date', label: 'Date', type: 'date' },
-    { key: 'departureTime', label: 'Departure (UTC)', type: 'time' },
-    { key: 'landingTime', label: 'Landing (UTC)', type: 'time' },
-    { key: 'totalFlightTime', label: 'Total FT (hh:mm)', type: 'text' },
-    { key: 'remarks', label: 'Remarks', type: 'text' },
+    { key: 'takeoffDirection', label: 'Take-off Direction', type: 'text' },
+    { key: 'takeoffWind', label: 'Take-off Wind', type: 'text' },
+    { key: 'takeoffWeather', label: 'Take-off Weather', type: 'text' },
+    { key: 'takeoffWeight', label: 'Take-off Weight', type: 'text' },
+    { key: 'systemConfiguration', label: 'System configuration', type: 'textarea' },
+    { key: 'missionDescription', label: 'Mission Description / Observations', type: 'textarea' },
+    { key: 'landingDirection', label: 'Landing Direction', type: 'text' },
+    { key: 'landingWind', label: 'Landing Wind', type: 'text' },
+    { key: 'landingWeather', label: 'Landing Weather', type: 'text' },
+    { key: 'landingWeightFuel', label: 'Landing Weight/Fuel', type: 'text' },
+    { key: 'aircraftCondition', label: 'Aircraft Condition', type: 'textarea' },
+    { key: 'faultsDetected', label: 'Faults Detected', type: 'textarea' },
+    { key: 'safetyOccurrences', label: 'Safety Occurrences', type: 'textarea' },
   ];
 
   return (
@@ -178,14 +233,14 @@ export default function NocChecklist() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {headerFields.map(({ key, label }) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {headerFields.map(({ key, label, type }) => (
             <div key={key}>
               <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">
                 {label}
               </label>
               <input
-                type="text"
+                type={type ?? 'text'}
                 value={data.header[key]}
                 onChange={e => updateHeader(key, e.target.value)}
                 placeholder={label}
@@ -194,6 +249,20 @@ export default function NocChecklist() {
             </div>
           ))}
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">Version</label>
+            <input type="text" value={data.header.nocVersion} onChange={e => updateHeader('nocVersion', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
+          </div>
+          <div>
+            <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">NOC Date</label>
+            <input type="text" value={data.header.nocDate} onChange={e => updateHeader('nocDate', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
+          </div>
+          <div>
+            <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">Reference</label>
+            <input type="text" value={data.header.nocReference} onChange={e => updateHeader('nocReference', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
+          </div>
+        </div>
       </div>
 
       {/* ── Flight Resume ── */}
@@ -201,21 +270,60 @@ export default function NocChecklist() {
         <h3 className="text-base font-black text-white uppercase tracking-wide mb-4">
           Flight Resume
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {resumeFields.map(({ key, label, type }) => (
             <div key={key}>
               <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">
                 {label}
               </label>
-              <input
-                type={type}
-                value={data.flightResume[key]}
-                onChange={e => updateFlightResume(key, e.target.value)}
-                placeholder={type === 'text' ? label : undefined}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
-              />
+              {type === 'textarea' ? (
+                <textarea
+                  value={data.flightResume[key]}
+                  onChange={e => updateFlightResume(key, e.target.value)}
+                  rows={3}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 resize-none"
+                />
+              ) : (
+                <input
+                  type={type}
+                  value={data.flightResume[key]}
+                  onChange={e => updateFlightResume(key, e.target.value)}
+                  placeholder={label}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500"
+                />
+              )}
             </div>
           ))}
+        </div>
+        <div className="mt-5">
+          <h4 className="text-sm font-black text-white uppercase tracking-wide mb-3">Flight Crew</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-700">
+                  <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold w-16">#</th>
+                  <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold">Name</th>
+                  <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold">Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }, (_, i) => (
+                  <tr key={`crew-resume-${i}`} className={i % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/50'}>
+                    <td className="border border-slate-600 px-3 py-2 text-slate-300">{i + 1}</td>
+                    <td className="border border-slate-600 p-1">
+                      <input type="text" value={getStr(`resume-crew-name-${i + 1}`)} onChange={e => updateField(`resume-crew-name-${i + 1}`, e.target.value)} className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded" />
+                    </td>
+                    <td className="border border-slate-600 p-1">
+                      <input type="text" value={getStr(`resume-crew-role-${i + 1}`)} onChange={e => updateField(`resume-crew-role-${i + 1}`, e.target.value)} className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="mt-4">
+          <RpicSignRow prefix="resume" getStr={getStr} update={updateField} />
         </div>
       </div>
 
@@ -243,13 +351,13 @@ export default function NocChecklist() {
             <PreFlightTab getStr={getStr} getBool={getBool} getNum={getNum} update={updateField} />
           )}
           {activeTab === 'takeoff' && (
-            <TakeOffTab getStr={getStr} update={updateField} />
+            <TakeOffTab getStr={getStr} getBool={getBool} update={updateField} />
           )}
           {activeTab === 'inflight' && (
             <InFlightTab getStr={getStr} update={updateField} />
           )}
           {activeTab === 'prelanding' && (
-            <PlaceholderTab tab={TABS.find(t => t.id === 'prelanding')!} />
+            <PreLandingTab getStr={getStr} getBool={getBool} update={updateField} />
           )}
           {activeTab === 'postflight' && (
             <PostFlightTab getBool={getBool} getStr={getStr} update={updateField} />
@@ -288,313 +396,242 @@ function PlaceholderTab({ tab }: { tab: { label: string; icon: string } }) {
 interface FieldProps {
   getStr: (key: string) => string;
   getBool: (key: string) => boolean;
-  getNum: (key: string) => number | '';
+  getNum?: (key: string) => number | '';
   update: (key: string, value: FieldValue) => void;
 }
 
-type ItemDef =
-  | { id: string; type: 'checkbox'; label: string }
-  | { id: string; type: 'number'; label: string; unit?: string }
-  | { id: string; type: 'text'; label: string };
+type ChecklistInputType = 'check' | 'text' | 'number' | 'time';
+interface ChecklistRow {
+  id: string;
+  num: string;
+  item: string;
+  action: string;
+  input: ChecklistInputType;
+  placeholder?: string;
+}
 
-interface Section {
+function ChecklistTable({
+  title,
+  rows,
+  getStr,
+  getBool,
+  update,
+}: {
   title: string;
-  items: ItemDef[];
-}
-
-function PreFlightTab({ getStr, getBool, getNum, update }: FieldProps) {
-  const sections: Section[] = [
-    {
-      title: 'A. Documentation & Authorisations',
-      items: [
-        { id: 'pf-doc-1', type: 'checkbox', label: 'Flight authorisation received' },
-        { id: 'pf-doc-2', type: 'checkbox', label: 'NOTAMs checked' },
-        { id: 'pf-doc-3', type: 'checkbox', label: 'Weather briefing completed' },
-        { id: 'pf-doc-4', type: 'text', label: 'Weather remarks' },
-      ],
-    },
-    {
-      title: 'B. Aircraft',
-      items: [
-        { id: 'pf-ac-1', type: 'checkbox', label: 'Aircraft configuration verified' },
-        { id: 'pf-ac-2', type: 'number', label: 'Fuel quantity', unit: 'L' },
-        { id: 'pf-ac-3', type: 'checkbox', label: 'MEL checked — no open items' },
-        { id: 'pf-ac-4', type: 'text', label: 'Defect / MEL notes' },
-      ],
-    },
-    {
-      title: 'C. Ground Equipment',
-      items: [
-        { id: 'pf-ge-1', type: 'checkbox', label: 'GCS powered and operational' },
-        { id: 'pf-ge-2', type: 'checkbox', label: 'Tracker powered and linked' },
-        { id: 'pf-ge-3', type: 'checkbox', label: 'Comms established' },
-        { id: 'pf-ge-4', type: 'text', label: 'Equipment remarks' },
-      ],
-    },
-    {
-      title: 'D. Crew',
-      items: [
-        { id: 'pf-cr-1', type: 'checkbox', label: 'RPIC briefed' },
-        { id: 'pf-cr-2', type: 'checkbox', label: 'Observer(s) in position' },
-        { id: 'pf-cr-3', type: 'text', label: 'Crew remarks' },
-      ],
-    },
-  ];
-
+  rows: ChecklistRow[];
+  getStr: (key: string) => string;
+  getBool: (key: string) => boolean;
+  update: (key: string, value: FieldValue) => void;
+}) {
   return (
-    <div className="space-y-6">
-      {sections.map(section => (
-        <div key={section.title}>
-          <h4 className="text-red-400 font-black uppercase text-xs tracking-widest mb-3 pb-1 border-b border-slate-700">
-            {section.title}
-          </h4>
-          <div className="space-y-1">
-            {section.items.map(item => (
-              <FieldRow key={item.id} item={item} getStr={getStr} getBool={getBool} getNum={getNum} update={update} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FieldRow({ item, getStr, getBool, getNum, update }: { item: ItemDef } & FieldProps) {
-  if (item.type === 'checkbox') {
-    return (
-      <label className="flex items-center gap-3 py-2 px-2 rounded hover:bg-slate-700/40 cursor-pointer group border-b border-slate-700/40">
-        <input
-          type="checkbox"
-          checked={getBool(item.id)}
-          onChange={e => update(item.id, e.target.checked)}
-          className="w-5 h-5 accent-red-500 cursor-pointer flex-shrink-0"
-        />
-        <span
-          className={`text-sm select-none ${getBool(item.id) ? 'text-slate-500 line-through' : 'text-white group-hover:text-slate-200'}`}
-        >
-          {item.label}
-        </span>
-        {getBool(item.id) && <span className="ml-auto text-green-500 text-xs font-bold">✓</span>}
-      </label>
-    );
-  }
-
-  if (item.type === 'number') {
-    return (
-      <div className="flex items-center gap-3 py-2 px-2 border-b border-slate-700/40">
-        <span className="text-white text-sm flex-1">{item.label}</span>
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            value={getNum(item.id)}
-            onChange={e => update(item.id, e.target.value === '' ? '' : parseFloat(e.target.value))}
-            className="bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm w-24 focus:outline-none focus:border-red-500 text-right"
-            placeholder="—"
-          />
-          {item.unit && <span className="text-slate-400 text-xs w-6">{item.unit}</span>}
-        </div>
-      </div>
-    );
-  }
-
-  // text
-  return (
-    <div className="flex items-center gap-3 py-2 px-2 border-b border-slate-700/40">
-      <span className="text-slate-300 text-sm w-40 flex-shrink-0">{item.label}</span>
-      <input
-        type="text"
-        value={getStr(item.id)}
-        onChange={e => update(item.id, e.target.value)}
-        placeholder="—"
-        className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:border-red-500"
-      />
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────
-   TAKE-OFF — NOC page alignment (rows 80–97)
-──────────────────────────────────────────────── */
-function TakeOffTab({ getStr, update }: { getStr: (k: string) => string; update: (k: string, v: FieldValue) => void }) {
-  const remarksInput = (key: string) => (
-    <input
-      type="text"
-      value={getStr(key)}
-      onChange={e => update(key, e.target.value)}
-      className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
-      placeholder="Remarks"
-    />
-  );
-
-  return (
-    <div className="space-y-4">
-      <h4 className="text-white font-black text-sm">Before Take-off</h4>
+    <div className="space-y-3">
+      <h4 className="text-white font-black text-sm">{title}</h4>
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse min-w-[980px]">
+          <thead>
+            <tr className="bg-slate-700">
+              <th className="border border-slate-600 px-2 py-2 w-14 text-center text-white font-bold">#</th>
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold w-72">Item</th>
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold">Action / Value</th>
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold w-52">Record</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold w-14">80</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold w-44">Roll Right</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
-                Check Left Aileron Up/ Right Aileron Down/ Lidar Increase / Instruments
-              </td>
-              <td className="border border-slate-600 p-1 w-40">{remarksInput('to-80')}</td>
-            </tr>
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">81</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Pitot</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Remove cover</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-81')}</td>
-            </tr>
-
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">82</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold" rowSpan={3}>
-                Airspeed Test
-              </td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
-                Check EKF Table for Instance in use — Airspeed 1 test
-              </td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-82')}</td>
-            </tr>
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">83</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Airspeed 2 test</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-83')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">84</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Airspeed 3 test</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-84')}</td>
-            </tr>
-
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">85</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Mode Manual</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Change</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-85')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">86</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">RC receivers Availability</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check 2 receivers available</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-86')}</td>
-            </tr>
-
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold" rowSpan={2}>87</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold leading-relaxed" rowSpan={2}>
-                Weather Conditions Limits:
-                <br />→ Headwind ≤25kts (gusts 30)
-                <br />→ Crosswind ≤14kts (gusts 17)
-                <br />→ Cruise ≤35kts
-                <br />→ Tailwind ≤5kts
-                <br />→ Temp -10–40°C
-              </td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check &amp; log PT - IPMA</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-87-pt')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
-                Check &amp; log ES - AEMET (if Cross Border Flight)
-              </td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-87-es')}</td>
-            </tr>
-
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">88</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Runway</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check runway and take-off direction</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-88')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">89</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Payload Configuration</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Confirm payload config/status. Observations:</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-89')}</td>
-            </tr>
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">90</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Gimbal</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set to PROTECT</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-90')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">91</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">SAR / VIDAR</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">ON and confirm PROTECT mode</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-91')}</td>
-            </tr>
-
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold" rowSpan={9}>92</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold leading-relaxed" rowSpan={9}>
-                Routes
-                <br />
-                1. Read
-                <br />
-                If needed:
-                <br />
-                1. Load,
-                <br />
-                2. Write
-                <br />
-                3. Read
-              </td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Mission Loaded</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-92-1')}</td>
-            </tr>
-            {[
-              'Prepare Take-off Set',
-              'Loiter radius min 250m',
-              'CW or CCW',
-              'WP radius 100',
-              'Prepare Landing Set',
-              'LANDING Waypoint Set',
-              'Lock Heading',
-              'Check loaded Rally points',
-            ].map((line, idx) => (
-              <tr key={`to-92-${idx + 2}`} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/60'}>
-                <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">{line}</td>
-                <td className="border border-slate-600 p-1">{remarksInput(`to-92-${idx + 2}`)}</td>
+            {rows.map((row, idx) => (
+              <tr key={row.id} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/50'}>
+                <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">{row.num}</td>
+                <td className="border border-slate-600 px-3 py-2 text-white whitespace-pre-line">{row.item}</td>
+                <td className="border border-slate-600 px-3 py-2 text-slate-200 whitespace-pre-line">{row.action}</td>
+                <td className="border border-slate-600 p-1">
+                  {row.input === 'check' ? (
+                    <label className="flex items-center justify-center">
+                      <input type="checkbox" checked={getBool(row.id)} onChange={e => update(row.id, e.target.checked)} className="w-5 h-5 accent-red-500" />
+                    </label>
+                  ) : (
+                    <input
+                      type={row.input}
+                      value={getStr(row.id)}
+                      onChange={e => update(row.id, e.target.value)}
+                      placeholder={row.placeholder ?? '—'}
+                      className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+                    />
+                  )}
+                </td>
               </tr>
             ))}
-
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">93</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Transponder</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Switch ON</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-93')}</td>
-            </tr>
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">94</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Flight ID</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set Flight ID (TEK01/02)</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-94')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">95</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Aircraft Address</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set Aircraft Address</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-95')}</td>
-            </tr>
-            <tr className="bg-slate-800/60">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">96</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Squawk Code</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set VFR Squawk (A5656)</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-96')}</td>
-            </tr>
-            <tr className="bg-slate-800">
-              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">97</td>
-              <td className="border border-slate-600 px-3 py-2 text-white font-bold">ACS Mode</td>
-              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set STANDBY on ground</td>
-              <td className="border border-slate-600 p-1">{remarksInput('to-97')}</td>
-            </tr>
           </tbody>
         </table>
       </div>
     </div>
   );
+}
+
+function PreFlightTab({ getStr, getBool, update }: FieldProps) {
+  const rows: ChecklistRow[] = [
+    { id: 'pf-1', num: '1', item: 'Daily Briefing / I’M SAFE', action: 'Conducting the Daily Briefing and the I’M SAFE Procedure', input: 'check' },
+    { id: 'pf-2', num: '2', item: 'Registration Number', action: 'Confirm PRTpw866e5m72qwx affixed on aircraft', input: 'check' },
+    { id: 'pf-3', num: '3', item: 'Multi-Country Airspace Check', action: 'Check official sources for all airspace restrictions for all countries involved in the mission.', input: 'text' },
+    { id: 'pf-4', num: '4', item: 'Two-Person NOTAM Verification and sign (MANDATORY)', action: 'Portugal: UAS Geozones https://dnt.anac.pt/mapa.html | NOTAMs https://fplbriefing.nav.pt/login', input: 'text' },
+    { id: 'pf-4b', num: '', item: '', action: 'Spain: NOTAMs / UAS Geozones https://drones.enaire.es/ | BOTH RPIC AND RP MUST PERFORM THIS CHECK INDEPENDENTLY, SIGN-OFF', input: 'text' },
+    { id: 'pf-5', num: '5', item: 'Emergency Situations Check', action: 'Check & Log - PT: prociv-portal.geomai.mai.gov.pt ES: ran-vmap.proteccioncivil.es/ (if Cross Border Flight)', input: 'text' },
+    { id: 'pf-6', num: '6', item: 'Data Link & Tracker', action: 'ON', input: 'check' },
+    { id: 'pf-7', num: '7', item: 'Browser', action: 'Check local radio settings (.51)', input: 'check' },
+    { id: 'pf-8', num: '8', item: 'VPN', action: 'ON', input: 'check' },
+    { id: 'pf-9', num: '9', item: 'AWS Remote Desktop', action: 'Start all (telemetry and OBC)', input: 'check' },
+    { id: 'pf-10', num: '10', item: 'Comms Check', action: 'OK', input: 'check' },
+    { id: 'pf-11', num: '11', item: 'EPU and Wheel Chocks', action: 'Check EPU ON and Chocks fitted', input: 'check' },
+    { id: 'pf-12', num: '12', item: 'Birdfinder', action: 'Turn ON and check signal - BEFORE closing canopy', input: 'check' },
+    { id: 'pf-13', num: '13', item: 'Remote ID', action: 'Verify broadcast', input: 'check' },
+    { id: 'pf-14', num: '14', item: 'Technician Handover', action: 'Aircraft OK', input: 'check' },
+    { id: 'pf-15', num: '15', item: '', action: 'Fuel Quantity (L): Ask MT & Log', input: 'number' },
+    { id: 'pf-16', num: '16', item: '', action: 'Take Off Weight (Kg): Ask MT & Log', input: 'number' },
+    { id: 'pf-17', num: '17', item: 'SPC Checklist', action: 'Complete', input: 'check' },
+    { id: 'pf-18', num: '18', item: '', action: 'Correct Model, Trims, Screen locked, battery RC percentage', input: 'text' },
+    { id: 'pf-19', num: '19', item: 'Aircraft Level', action: '+- 5 degrees pitch', input: 'check' },
+    { id: 'pf-20', num: '20', item: '', action: '+-5 degrees roll', input: 'check' },
+    { id: 'pf-21', num: '21', item: 'Pitot Cover', action: 'Fitted', input: 'check' },
+    { id: 'pf-22', num: '22', item: 'Aircraft ON', action: 'BMS Switches: Critical and Non-Critical On | System Initializing (Wait 30 seconds)', input: 'check' },
+    { id: 'pf-23', num: '23', item: 'Initialization', action: 'Complete', input: 'check' },
+    { id: 'pf-24', num: '24', item: 'Screen Recorder', action: 'Start Recording', input: 'check' },
+    { id: 'pf-25', num: '25', item: 'GCS', action: 'Show config editor / load / start selected', input: 'check' },
+    { id: 'pf-26', num: '26', item: 'Mode', action: 'Manual', input: 'check' },
+    { id: 'pf-27', num: '27', item: 'SPC Ignition Test', action: 'Turn OFF and back ON, Check OFF in GCS', input: 'check' },
+    { id: 'pf-28', num: '28', item: 'Ignition', action: 'Ignition ON', input: 'check' },
+    { id: 'pf-29', num: '29', item: 'Throttle %', action: '<12%', input: 'number' },
+    { id: 'pf-30', num: '30', item: 'GCS Avionics Tab', action: 'Check all Fuses are Present', input: 'check' },
+    { id: 'pf-31', num: '31', item: '', action: 'Check all Fuses are Green/ON', input: 'check' },
+    { id: 'pf-32', num: '32', item: 'Accelerometer', action: 'Ax and Ax2 (-100:100, max dif. 50)', input: 'text' },
+    { id: 'pf-33', num: '33', item: '', action: 'Ay and Ay2 (-100:100, max dif. 50)', input: 'text' },
+    { id: 'pf-34', num: '34', item: '', action: 'Ayz and Az2 (-1080:-880, max dif. 50)', input: 'text' },
+    { id: 'pf-35', num: '35', item: 'Gyro', action: 'Gx and Gx2 (-100:100)', input: 'text' },
+    { id: 'pf-36', num: '36', item: '', action: 'Gy and Gy2 (-100:100)', input: 'text' },
+    { id: 'pf-37', num: '37', item: '', action: 'Gz and Gz2 (-100:100)', input: 'text' },
+    { id: 'pf-38', num: '38', item: 'EPU Connected', action: 'Check EPU as power source', input: 'check' },
+    { id: 'pf-39', num: '39', item: '', action: 'Confirm battery SOC>90%', input: 'check' },
+    { id: 'pf-40', num: '40', item: 'GPS: EKF Table', action: 'Check all 3 instances scores are green', input: 'check' },
+    { id: 'pf-41', num: '41', item: '', action: 'Check all 3 instances are enabled', input: 'check' },
+    { id: 'pf-42', num: '42', item: '', action: 'Check which instance is in-use', input: 'text' },
+    { id: 'pf-43', num: '43', item: '', action: 'GPS1 Status', input: 'text' },
+    { id: 'pf-44', num: '44', item: '', action: 'GPS1 - Sats > 6', input: 'number' },
+    { id: 'pf-45', num: '45', item: '', action: 'GPS2 Status', input: 'text' },
+    { id: 'pf-46', num: '46', item: '', action: 'GPS2 - Sats > 6', input: 'number' },
+    { id: 'pf-47', num: '47', item: '', action: 'GPS3 Status', input: 'text' },
+    { id: 'pf-48', num: '48', item: '', action: 'GPS3 - Sats > 6', input: 'number' },
+    { id: 'pf-49', num: '49', item: '', action: 'HDOP (<1)', input: 'number' },
+    { id: 'pf-50', num: '50', item: '', action: 'VDOP [ 0.8 : 1.5 ]', input: 'number' },
+    { id: 'pf-51', num: '51', item: 'Pre-Flight Walkaround', action: 'Complete', input: 'check' },
+    { id: 'pf-52', num: '52', item: '', action: 'Observations:', input: 'text' },
+    { id: 'pf-53', num: '53', item: 'SPC Logs Record', action: 'Start Recording', input: 'check' },
+    { id: 'pf-54', num: '54', item: 'SPC Range Check', action: 'Clear to perform range check', input: 'check' },
+    { id: 'pf-55', num: '55', item: 'Throttle Failsafe', action: 'Check autopilot messages', input: 'text' },
+    { id: 'pf-56', num: '56', item: 'Magnetometer', action: 'Graph Mx, Mx2, Mx3 and check if values are coherent', input: 'check' },
+    { id: 'pf-57', num: '57', item: '', action: 'Graph My, My2, My3 and check if values are coherent', input: 'check' },
+    { id: 'pf-58', num: '58', item: '', action: 'Graph Mz, Mz2, Mz3 and check if values are coherent', input: 'check' },
+    { id: 'pf-59', num: '59', item: 'RLOS', action: 'OK (100%) & RSSI>-15', input: 'text' },
+    { id: 'pf-60', num: '60', item: 'RLOS-B', action: 'OK (100%)', input: 'text' },
+    { id: 'pf-61', num: '61', item: '4G', action: 'OK (100%)', input: 'text' },
+    { id: 'pf-62', num: '62', item: 'RSSI', action: 'Check RSSI values on tracker during taxi', input: 'text' },
+    { id: 'pf-63', num: '63', item: 'Satcom Service', action: 'ON', input: 'check' },
+    { id: 'pf-64', num: '64', item: 'SATCOM-B Mode', action: 'Set to ON', input: 'check' },
+    { id: 'pf-65', num: '65', item: 'SATCOM-B', action: '100%', input: 'text' },
+    { id: 'pf-66', num: '66', item: 'Remaining fuel (sensor)', action: 'Check and Log value', input: 'number' },
+    { id: 'pf-67', num: '67', item: 'Initial fuel level', action: 'Input & Log value', input: 'number' },
+    { id: 'pf-68', num: '68', item: 'Parameters', action: 'Refresh', input: 'check' },
+    { id: 'pf-69', num: '69', item: 'GROUND_STEER_ALT', action: 'VALUE 5', input: 'text' },
+    { id: 'pf-70', num: '70', item: 'TRIM_ARSPD_CM', action: 'VALUE: 2700 <150kg', input: 'text' },
+    { id: 'pf-71', num: '71', item: '', action: '2800 >150kg', input: 'text' },
+    { id: 'pf-72', num: '72', item: '', action: '2900 >165kg', input: 'text' },
+    { id: 'pf-73', num: '73', item: 'ALT_HOLD_RTL', action: 'VALUE -1', input: 'text' },
+    { id: 'pf-74', num: '74', item: 'Airspeed', action: '0<VALUE<10', input: 'text' },
+    { id: 'pf-75', num: '75', item: 'Barometer', action: 'Check Value', input: 'text' },
+    { id: 'pf-76', num: '76', item: 'Lidar distance', action: 'Start graph, Check value ]0,3]', input: 'text' },
+    { id: 'pf-77', num: '77', item: 'Mode FBWA', action: 'Change', input: 'check' },
+    { id: 'pf-78', num: '78', item: 'Roll Left', action: 'Check Left Aileron Down / Right Aileron Up / Lidar Increase / Instruments', input: 'check' },
+    { id: 'pf-79', num: '79', item: 'Pitch Up', action: 'Check Elevators Down / Instruments', input: 'check' },
+  ];
+
+  return <ChecklistTable title="Pre-Flight Checklist (1–79)" rows={rows} getStr={getStr} getBool={getBool} update={update} />;
+}
+
+/* ────────────────────────────────────────────────
+   TAKE-OFF — NOC page alignment (rows 80–97)
+──────────────────────────────────────────────── */
+function TakeOffTab({ getStr, getBool, update }: { getStr: (k: string) => string; getBool: (k: string) => boolean; update: (k: string, v: FieldValue) => void }) {
+  const rows: ChecklistRow[] = [
+    { id: 'to-80', num: '80', item: 'Roll Right', action: 'Check Left Aileron Up/ Right Aileron Down/ Lidar Increase / Instruments', input: 'check' },
+    { id: 'to-81', num: '81', item: 'Pitot', action: 'Remove cover', input: 'check' },
+    { id: 'to-82', num: '82', item: 'Airspeed Test', action: 'Check EKF Table for Instance in use — Airspeed 1 test', input: 'check' },
+    { id: 'to-83', num: '83', item: '', action: 'Airspeed 2 test', input: 'check' },
+    { id: 'to-84', num: '84', item: '', action: 'Airspeed 3 test', input: 'check' },
+    { id: 'to-85', num: '85', item: 'Mode Manual', action: 'Change', input: 'check' },
+    { id: 'to-86', num: '86', item: 'RC receivers Availability', action: 'Check 2 receivers available', input: 'check' },
+    { id: 'to-87-pt', num: '87', item: 'Weather Conditions Limits:\n→ Headwind ≤25kts (gusts 30)\n→ Crosswind ≤14kts (gusts 17)\n→ Cruise ≤35kts\n→ Tailwind ≤5kts\n→ Temp -10–40°C', action: 'Check & log PT - IPMA', input: 'text' },
+    { id: 'to-87-es', num: '', item: '', action: 'Check & log ES - AEMET (if Cross Border Flight)', input: 'text' },
+    { id: 'to-88', num: '88', item: 'Runway', action: 'Check runway and take-off direction', input: 'text' },
+    { id: 'to-89', num: '89', item: 'Payload Configuration', action: 'Confirm payload config/status. Observations:', input: 'text' },
+    { id: 'to-90', num: '90', item: 'Gimbal', action: 'Set to PROTECT', input: 'check' },
+    { id: 'to-91', num: '91', item: 'SAR / VIDAR', action: 'ON and confirm PROTECT mode', input: 'check' },
+    { id: 'to-92-1', num: '92', item: 'Routes\n1. Read\nIf needed:\n1. Load,\n2. Write\n3. Read', action: 'Mission Loaded', input: 'check' },
+    { id: 'to-92-2', num: '', item: '', action: 'Prepare Take-off Set', input: 'check' },
+    { id: 'to-92-3', num: '', item: '', action: 'Loiter radius min 250m', input: 'text' },
+    { id: 'to-92-4', num: '', item: '', action: 'CW or CCW', input: 'text' },
+    { id: 'to-92-5', num: '', item: '', action: 'WP radius 100', input: 'text' },
+    { id: 'to-92-6', num: '', item: '', action: 'Prepare Landing Set', input: 'check' },
+    { id: 'to-92-7', num: '', item: '', action: 'LANDING Waypoint Set', input: 'check' },
+    { id: 'to-92-8', num: '', item: '', action: 'Lock Heading', input: 'check' },
+    { id: 'to-92-9', num: '', item: '', action: 'Check loaded Rally points', input: 'check' },
+    { id: 'to-93', num: '93', item: 'Transponder', action: 'Switch ON', input: 'check' },
+    { id: 'to-94', num: '94', item: 'Flight ID', action: 'Set Flight ID (TEK01/02)', input: 'text' },
+    { id: 'to-95', num: '95', item: 'Aircraft Address', action: 'Set Aircraft Address', input: 'text' },
+    { id: 'to-96', num: '96', item: 'Squawk Code', action: 'Set VFR Squawk (A5656)', input: 'text' },
+    { id: 'to-97', num: '97', item: 'ACS Mode', action: 'Set STANDBY on ground', input: 'check' },
+    { id: 'to-98', num: '98', item: 'Navigation Lights', action: 'ON', input: 'check' },
+    { id: 'to-99', num: '99', item: 'Strobe lights', action: 'ON', input: 'check' },
+    { id: 'to-100', num: '100', item: 'Landing Lights', action: 'ON & OFF', input: 'check' },
+    { id: 'to-101', num: '101', item: 'Request Startup', action: 'Permission Granted', input: 'check' },
+    { id: 'to-102', num: '102', item: 'EPU', action: 'Remove EPU / Close Hatch', input: 'check' },
+    { id: 'to-103', num: '103', item: '', action: 'Power source: Batteries', input: 'check' },
+    { id: 'to-104', num: '104', item: 'Throttle', action: 'Idle', input: 'check' },
+    { id: 'to-105', num: '105', item: 'Ignition', action: 'ON', input: 'check' },
+    { id: 'to-106', num: '106', item: 'Brakes', action: 'ON', input: 'check' },
+    { id: 'to-107', num: '107', item: 'Startup #1 & #2', action: 'Time:', input: 'time' },
+    { id: 'to-108', num: '108', item: 'Engine Warm Up', action: 'Aprox. 2000RPM', input: 'text' },
+    { id: 'to-109', num: '109', item: 'Engine Status', action: 'Check Engine Sensors Alive and Plausible', input: 'check' },
+    { id: 'to-110', num: '110', item: 'Engine Temperature', action: 'Check >=100ºC #1 & #2', input: 'text' },
+    { id: 'to-111', num: '111', item: 'Ignition tests @3000rpm', action: 'CDI 1 OFF Check TPS increase, 3000rpm', input: 'check' },
+    { id: 'to-112', num: '112', item: '', action: 'CDI 1 ON Check TPS decrease, 3000rpm', input: 'check' },
+    { id: 'to-113', num: '113', item: '', action: 'CDI 3 OFF Check TPS increase, 3000rpm', input: 'check' },
+    { id: 'to-114', num: '114', item: '', action: 'CDI 3 ON Check TPS decrease, 3000rpm', input: 'check' },
+    { id: 'to-115', num: '115', item: '', action: 'CDI 2 OFF Check TPS increase, 3000rpm', input: 'check' },
+    { id: 'to-116', num: '116', item: '', action: 'CDI 2 ON Check TPS decrease, 3000rpm', input: 'check' },
+    { id: 'to-117', num: '117', item: '', action: 'CDI 4 OFF Check TPS increase, 3000rpm', input: 'check' },
+    { id: 'to-118', num: '118', item: '', action: 'CDI 4 ON Check TPS decrease, 3000rpm', input: 'check' },
+    { id: 'to-119', num: '119', item: 'SP-170 Engine Max RPM Test (5s)', action: '(check>5200RPM) Max RPM #1 and Max RPM #2', input: 'text' },
+    { id: 'to-120', num: '120', item: 'Ekarus 280 Engine Max RPM Test (5s)', action: '(check>4900RPM) Max RPM #1 and Max RPM #2', input: 'text' },
+    { id: 'to-121', num: '121', item: 'Battery & Generator Status', action: 'Generator Swap @ [2250 RPM, 2750 RPM]', input: 'check' },
+    { id: 'to-122', num: '122', item: 'Request Taxi', action: 'Permission Granted', input: 'check' },
+    { id: 'to-123', num: '123', item: 'Wheel Chocks', action: 'Removed', input: 'check' },
+    { id: 'to-124', num: '124', item: 'Check Controls', action: 'Manual and FBWA', input: 'check' },
+    { id: 'to-125', num: '125', item: 'Check Brakes', action: 'Manual and FBWA', input: 'check' },
+    { id: 'to-126', num: '126', item: 'Check Steering', action: 'Manual and FBWA', input: 'check' },
+    { id: 'to-127', num: '127', item: 'Tracker', action: 'Tracking Aircraft Correctly', input: 'check' },
+    { id: 'to-128', num: '128', item: 'Stop on Runway', action: 'Set Home Altitude & Set Home Position', input: 'check' },
+    { id: 'to-129', num: '129', item: 'Route', action: 'Check aircraft heading, route, altitudes, and write to the aircraft', input: 'check' },
+    { id: 'to-130', num: '130', item: 'Request Take-off', action: 'Permission Granted', input: 'check' },
+    { id: 'to-131', num: '131', item: 'Time info panel', action: 'Start Mission', input: 'check' },
+    { id: 'to-132', num: '132', item: 'Engines', action: 'Clear Engines', input: 'check' },
+    { id: 'to-133', num: '133', item: 'Take-off', action: 'Time:', input: 'time' },
+    { id: 'to-134', num: '134', item: 'Take-off Complete', action: 'General Status OK', input: 'check' },
+    { id: 'to-135', num: '135', item: 'Change THR_MIN', action: 'Change THR_MIN to 30%', input: 'check' },
+    { id: 'to-136', num: '136', item: 'SATCOM On', action: 'Satcom VMBR + ACU', input: 'check' },
+    { id: 'to-137', num: '137', item: 'Radar On', action: 'Radar', input: 'check' },
+    { id: 'to-138', num: '138', item: 'IMSAR', action: 'SAR ON (if fitted)', input: 'check' },
+    { id: 'to-139', num: '139', item: 'Browser', action: 'Check Satcom IP', input: 'check' },
+    { id: 'to-140', num: '140', item: 'Ground Steer', action: 'Set GROUND_STEER_ALT = 0', input: 'check' },
+    { id: 'to-141', num: '141', item: 'SPC', action: 'Off', input: 'check' },
+  ];
+
+  return <ChecklistTable title="Before Take-off Checklist (80–141)" rows={rows} getStr={getStr} getBool={getBool} update={update} />;
 }
 
 /* ────────────────────────────────────────────────
@@ -785,6 +822,51 @@ function InFlightTab({ getStr, update }: { getStr: (k: string) => string; update
       <RpicSignRow prefix="fir" getStr={getStr} update={update} />
     </div>
   );
+}
+
+/* ────────────────────────────────────────────────
+   PRE-LANDING — Landing checklist (1–35)
+──────────────────────────────────────────────── */
+function PreLandingTab({ getStr, getBool, update }: FieldProps) {
+  const rows: ChecklistRow[] = [
+    { id: 'pl-1', num: '1', item: 'Runway', action: 'Check runway direction', input: 'check' },
+    { id: 'pl-2', num: '2', item: 'IMSAR', action: 'SAR OFF (if fitted)', input: 'check' },
+    { id: 'pl-3', num: '3', item: 'SATCOM OFF', action: 'Satcom VMBR + ACU', input: 'check' },
+    { id: 'pl-4', num: '4', item: 'Change THR_MIN', action: 'Change THR_MIN to 0%', input: 'check' },
+    { id: 'pl-5', num: '5', item: 'Ground Steer', action: 'Set GROUND_STEER_ALT = 5', input: 'check' },
+    { id: 'pl-6', num: '6', item: 'TRIM_ARSPD_CM', action: 'Check value and landing weight', input: 'text' },
+    { id: 'pl-7', num: '7', item: 'Radar', action: 'STDBY and OFF', input: 'check' },
+    { id: 'pl-8', num: '8', item: 'Comms Check', action: 'OK', input: 'check' },
+    { id: 'pl-9', num: '9', item: 'Aircraft', action: 'In Sight', input: 'check' },
+    { id: 'pl-10', num: '10', item: 'SPC Checklist', action: 'OK & ON', input: 'check' },
+    { id: 'pl-11', num: '11', item: 'SP Log Recorder', action: 'Start Recording', input: 'check' },
+    { id: 'pl-12', num: '12', item: 'Brakes', action: 'OFF', input: 'check' },
+    { id: 'pl-13', num: '13', item: 'Lights', action: 'ON', input: 'check' },
+    { id: 'pl-14', num: '14', item: 'Clearance', action: 'Permission to land', input: 'check' },
+    { id: 'pl-15', num: '15', item: 'Landing', action: 'Time:', input: 'time' },
+    { id: 'pl-16', num: '16', item: 'Vacate', action: 'Runway vacated', input: 'check' },
+    { id: 'pl-17', num: '17', item: 'Strobes', action: 'OFF', input: 'check' },
+    { id: 'pl-18', num: '18', item: 'Request taxi', action: 'Permission granted', input: 'check' },
+    { id: 'pl-19', num: '19', item: 'SATCOM-B', action: 'OFF', input: 'check' },
+    { id: 'pl-20', num: '20', item: 'Engine Off', action: 'Time:', input: 'time' },
+    { id: 'pl-21', num: '21', item: 'SPC Logs Record', action: 'Stop Recording', input: 'check' },
+    { id: 'pl-22', num: '22', item: 'Remaining fuel (sensor)', action: 'GCS front panel', input: 'number' },
+    { id: 'pl-23', num: '23', item: 'Remaining fuel (integrated)', action: 'Platform status', input: 'number' },
+    { id: 'pl-24', num: '24', item: 'EPU', action: 'Connected', input: 'check' },
+    { id: 'pl-25', num: '25', item: '', action: 'Check Batteries Charging', input: 'check' },
+    { id: 'pl-26', num: '26', item: 'Battery status', action: 'Check Batteries SOC>90%', input: 'check' },
+    { id: 'pl-27', num: '27', item: 'Lights', action: 'Nav and land OFF', input: 'check' },
+    { id: 'pl-28', num: '28', item: 'Post Flight Walk-around', action: 'Begin', input: 'check' },
+    { id: 'pl-29', num: '29', item: 'Time info panel', action: 'Stop Mission', input: 'check' },
+    { id: 'pl-30', num: '30', item: 'Screen Recorder', action: 'Stop Recording', input: 'check' },
+    { id: 'pl-31', num: '31', item: 'Download Data', action: 'Gimbal & Radar', input: 'check' },
+    { id: 'pl-32', num: '32', item: 'Post-Flight Walkaround', action: 'Complete', input: 'check' },
+    { id: 'pl-33', num: '33', item: '', action: 'Observations:', input: 'text' },
+    { id: 'pl-34', num: '34', item: 'Aircraft OFF', action: 'BMS Switches: Critical and Non-Critical Off', input: 'check' },
+    { id: 'pl-35', num: '35', item: 'Birdfinder', action: 'Remove and charge device', input: 'check' },
+  ];
+
+  return <ChecklistTable title="Pre-Landing Checklist (1–35)" rows={rows} getStr={getStr} getBool={getBool} update={update} />;
 }
 
 /* ────────────────────────────────────────────────
