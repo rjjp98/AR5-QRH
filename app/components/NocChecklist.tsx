@@ -375,21 +375,6 @@ export default function NocChecklist() {
 }
 
 /* ────────────────────────────────────────────────
-   Placeholder for tabs not yet implemented
-──────────────────────────────────────────────── */
-function PlaceholderTab({ tab }: { tab: { label: string; icon: string } }) {
-  return (
-    <div className="flex items-center justify-center py-16 text-slate-500">
-      <div className="text-center">
-        <div className="text-5xl mb-4">{tab.icon}</div>
-        <p className="font-black text-lg text-white">{tab.label}</p>
-        <p className="text-sm mt-2 text-slate-400">Coming in Phase 2 / 3</p>
-      </div>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────
    PRE-FLIGHT tab — structural skeleton (Phase 1)
    Full ~80 fields added in Phase 2
 ──────────────────────────────────────────────── */
