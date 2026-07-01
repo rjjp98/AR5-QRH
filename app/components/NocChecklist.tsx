@@ -29,6 +29,7 @@ interface NocData {
 }
 
 const STORAGE_KEY = 'noc-checklist-v1';
+const DEFAULT_NOC_VERSION = '5';
 
 const TABS: { id: NocTab; label: string; icon: string }[] = [
   { id: 'preflight', label: 'PRE-FLIGHT', icon: '📋' },
@@ -41,7 +42,7 @@ const TABS: { id: NocTab; label: string; icon: string }[] = [
 ];
 
 const DEFAULT_DATA: NocData = {
-  header: { aircraftID: '', gcs: '', tracker: '', rpic: '', mission: '', nocVersion: '5' },
+  header: { aircraftID: '', gcs: '', tracker: '', rpic: '', mission: '', nocVersion: DEFAULT_NOC_VERSION },
   flightResume: { date: '', departureTime: '', landingTime: '', totalFlightTime: '', remarks: '' },
   fields: {},
 };
@@ -553,7 +554,7 @@ function TakeOffTab({ getStr, update }: { getStr: (k: string) => string; update:
               'Lock Heading',
               'Check loaded Rally points',
             ].map((line, idx) => (
-              <tr key={line} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/60'}>
+              <tr key={`to-92-${idx + 2}`} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/60'}>
                 <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">{line}</td>
                 <td className="border border-slate-600 p-1">{remarksInput(`to-92-${idx + 2}`)}</td>
               </tr>
