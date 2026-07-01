@@ -232,8 +232,23 @@ export default function NocChecklist() {
           {activeTab === 'preflight' && (
             <PreFlightTab getStr={getStr} getBool={getBool} getNum={getNum} update={updateField} />
           )}
-          {activeTab !== 'preflight' && (
-            <PlaceholderTab tab={TABS.find(t => t.id === activeTab)!} />
+          {activeTab === 'takeoff' && (
+            <PlaceholderTab tab={TABS.find(t => t.id === 'takeoff')!} />
+          )}
+          {activeTab === 'inflight' && (
+            <InFlightTab getStr={getStr} update={updateField} />
+          )}
+          {activeTab === 'prelanding' && (
+            <PlaceholderTab tab={TABS.find(t => t.id === 'prelanding')!} />
+          )}
+          {activeTab === 'postflight' && (
+            <PostFlightTab getBool={getBool} getStr={getStr} update={updateField} />
+          )}
+          {activeTab === 'hourly' && (
+            <HourlyChecksTab getStr={getStr} update={updateField} />
+          )}
+          {activeTab === 'handover' && (
+            <HandoverTab getStr={getStr} update={updateField} />
           )}
         </div>
       </div>
@@ -387,5 +402,435 @@ function FieldRow({ item, getStr, getBool, getNum, update }: { item: ItemDef } &
         className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:border-red-500"
       />
     </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   HOURLY CHECKS — Flight Checks (hourly) — Page 10
+──────────────────────────────────────────────── */
+const HOURLY_COLS = ['Engine Start', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'LAND'] as const;
+const HOURLY_ROWS: { id: string; label: string }[] = [
+  { id: 'schedule', label: 'Schedule (hh:mm)' },
+  { id: 'fuel-proj', label: 'Fuel (projected)' },
+  { id: 'fuel-sensor', label: 'Fuel (sensor)' },
+  { id: 'fuel-cons', label: 'Fuel Consumption (L/h)' },
+  { id: 'mass', label: 'Aircraft Mass' },
+  { id: 'weather', label: 'Weather checks\n(PT: IPMA / ES: AEMET per FIR)' },
+  { id: 'geozones', label: 'Check UAS Geozones\n(PT: dnt.anac.pt / ES: drones.enaire.es per FIR)' },
+  { id: 'emergency', label: 'Check for Emergency\nSituations (**)' },
+];
+
+function HourlyChecksTab({ getStr, update }: { getStr: (k: string) => string; update: (k: string, v: FieldValue) => void }) {
+  const colKey = (col: string) => col.replace(/\s+/g, '-').toLowerCase();
+  return (
+    <div className="space-y-4">
+      <p className="text-slate-400 text-xs italic">Fill table with Fuel Sensor Data, Weather Checks and Aircraft Mass</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse min-w-[900px]">
+          <thead>
+            <tr className="bg-slate-700">
+              <th className="border border-slate-600 px-2 py-2 text-left text-white font-bold w-36">Flight Time (h)</th>
+              {HOURLY_COLS.map(col => (
+                <th key={col} className={`border border-slate-600 px-2 py-2 text-center text-white font-bold ${col === 'Engine Start' ? 'w-24' : 'w-14'}`}>
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {HOURLY_ROWS.map((row, ri) => (
+              <tr key={row.id} className={ri % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/50'}>
+                <td className="border border-slate-600 px-2 py-1 text-slate-200 text-xs leading-tight whitespace-pre-line">
+                  {row.label}
+                </td>
+                {HOURLY_COLS.map(col => (
+                  <td key={col} className="border border-slate-600 p-0.5">
+                    <input
+                      type="text"
+                      value={getStr(`hourly-${row.id}-${colKey(col)}`)}
+                      onChange={e => update(`hourly-${row.id}-${colKey(col)}`, e.target.value)}
+                      className="w-full bg-transparent text-white text-xs text-center px-1 py-1 focus:outline-none focus:bg-slate-700 rounded"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-slate-500 text-xs">
+        (**) PT:{' '}
+        <a href="https://prociv-portal.geomai.mai.gov.pt/arcgis/home" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+          prociv-portal.geomai.mai.gov.pt/arcgis/home
+        </a>{' '}
+        | ES:{' '}
+        <a href="https://ran-vmap.proteccioncivil.es/" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+          ran-vmap.proteccioncivil.es
+        </a>
+      </p>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   IN-FLIGHT — FIR Crossing Coordination — Page 11
+──────────────────────────────────────────────── */
+const FIR_ENTRIES = Array.from({ length: 10 }, (_, i) => i + 1);
+
+function InFlightTab({ getStr, update }: { getStr: (k: string) => string; update: (k: string, v: FieldValue) => void }) {
+  return (
+    <div className="space-y-6">
+      {/* ES Activation */}
+      <div>
+        <h4 className="text-red-400 font-black uppercase text-xs tracking-widest mb-2">ES Activation</h4>
+        <div className="bg-slate-900/50 rounded p-4 text-xs text-slate-300 leading-relaxed space-y-1 border border-slate-700">
+          <p>
+            The RPIC will call SPV/Jefe de Sala{' '}
+            <span className="text-red-400 font-semibold">(+34 954 555 416)</span>{' '}
+            30 minutes before entering FIR LECS.
+          </p>
+          <p>
+            Inform: (1) Entry zone ONLY via EMSA01, EMSA03 or EMSA04, (2) Work area, (3) Next planned areas.
+          </p>
+          <p>SPV communicates to ECAO Sevilla (+34 954 555 490/1) for SACTA activation.</p>
+          <p>Zone-by-zone: activate ONLY current zone. Call SPV each time leaving one zone and entering the next.</p>
+          <p>
+            <span className="text-red-400 font-semibold">Deactivation:</span> Call immediately upon exiting.
+          </p>
+        </div>
+      </div>
+
+      {/* ES Notes */}
+      <div>
+        <h4 className="text-red-400 font-black uppercase text-xs tracking-widest mb-2">ES Notes</h4>
+        <ul className="bg-slate-900/50 rounded p-4 text-xs text-slate-300 leading-relaxed space-y-1 border border-slate-700 list-disc list-inside">
+          <li>Transponder Mode C: Must remain ACTIVE throughout Spanish segment</li>
+          <li>ENAIRE Reference: 01033-2026 COOP | Military Reference: C0107</li>
+          <li>FIR LECS Entry: ONLY via EMSA01, EMSA03, or EMSA04</li>
+          <li>ECAO Sevilla (D-1): Confirm zone availability day prior — Tel: +34 954 555 490/1</li>
+          <li>LECS ACC Frequencies: Monitor per zone: 120.8 / 135.025 / 128.5 MHz</li>
+          <li>Spain General Aviation Freq: Monitor 121.500 MHz</li>
+          <li>Guadalquivir (Area 12) IF APPLICABLE: LER154 Authorization Required. El Copero TWR Freq: 126.750 MHz</li>
+        </ul>
+      </div>
+
+      {/* FIR Entry Log */}
+      <div>
+        <h4 className="text-white font-black text-sm mb-2">FIR Entry Log</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-700">
+                <th className="border border-slate-600 px-2 py-2 text-center text-white font-bold w-12">Entry #</th>
+                <th className="border border-slate-600 px-2 py-2 text-center text-white font-bold w-28">Time (UTC)</th>
+                <th className="border border-slate-600 px-2 py-2 text-center text-white font-bold w-36">Entering FIR (PT/ES)</th>
+                <th className="border border-slate-600 px-2 py-2 text-center text-white font-bold w-32">Clearance Received</th>
+                <th className="border border-slate-600 px-2 py-2 text-center text-white font-bold">Notes & Observations</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FIR_ENTRIES.map(n => (
+                <tr key={n} className="bg-slate-800">
+                  <td className={`border border-slate-600 px-2 py-1 text-center font-bold ${n === 1 || n === 10 ? 'text-red-400' : 'text-slate-300'}`}>
+                    {n}
+                  </td>
+                  {(['time', 'entering', 'clearance', 'notes'] as const).map(field => (
+                    <td key={field} className="border border-slate-600 p-0.5">
+                      <input
+                        type="text"
+                        value={getStr(`fir-${n}-${field}`)}
+                        onChange={e => update(`fir-${n}-${field}`, e.target.value)}
+                        className="w-full bg-transparent text-white text-xs px-2 py-1 focus:outline-none focus:bg-slate-700 rounded"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Contact Reference */}
+      <div>
+        <h4 className="text-white font-black text-sm mb-2">Contact Reference</h4>
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="bg-slate-700">
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold w-24">Country</th>
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold">Primary Contact</th>
+              <th className="border border-slate-600 px-3 py-2 text-left text-white font-bold">Backup Contact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Portugal</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-300">
+                Comando Aereo ISR<br />
+                <span className="text-blue-400">351 911 849 012</span>
+              </td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-300">
+                Comando Aereo ISR<br />
+                <span className="text-blue-400">351 911 826 599 / 351 965 695 539</span>
+              </td>
+            </tr>
+            <tr className="bg-slate-800/50">
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Spain</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-300">
+                ACC SEVILHA<br />
+                <span className="text-blue-400">0034-954 555 416</span>
+              </td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-300">
+                Backup<br />
+                <span className="text-blue-400">0034-954 555 490/1</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* RPIC sign-off */}
+      <RpicSignRow prefix="fir" getStr={getStr} update={update} />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   HANDOVER — Pilot Handover — Page 12
+──────────────────────────────────────────────── */
+const HANDOVER_ROWS = 5; // pairs of Handling / Relieving
+
+function HandoverTab({ getStr, update }: { getStr: (k: string) => string; update: (k: string, v: FieldValue) => void }) {
+  return (
+    <div className="space-y-6">
+      {/* Mission Info */}
+      <div>
+        <h4 className="text-white font-black text-sm mb-3">Mission Information</h4>
+        <table className="w-full text-xs border-collapse">
+          <tbody>
+            {(
+              [
+                { id: 'mission-details', label: 'Mission Details', hint: 'Callsign / Airspace Deconfliction / Objective / MET / RTB Time' },
+                { id: 'airspace-active', label: 'Airspace Active', hint: '' },
+                { id: 'time-deactivated', label: 'Time Deactivated', hint: '' },
+                { id: 'aircraft-status', label: 'Aircraft Status', hint: 'System Config / Engine Parameters / Fuel & Bingo / Limitations' },
+                { id: 'comms-status', label: 'Communication Status', hint: 'Datalinks / AWS / LOS Range / Serviceability' },
+              ] as { id: string; label: string; hint: string }[]
+            ).map(row => (
+              <tr key={row.id} className="bg-slate-800">
+                <td className="border border-slate-600 px-3 py-2 text-red-400 font-bold w-44 align-top">
+                  {row.label}
+                </td>
+                <td className="border border-slate-600 p-1">
+                  <input
+                    type="text"
+                    value={getStr(`ho-${row.id}`)}
+                    onChange={e => update(`ho-${row.id}`, e.target.value)}
+                    placeholder={row.hint || '—'}
+                    className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded placeholder-slate-600 italic"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Crew Details */}
+      <div>
+        <h4 className="text-white font-black text-sm mb-3">Crew Details</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse min-w-[600px]">
+            <thead>
+              <tr className="bg-slate-700">
+                <th className="border border-slate-600 px-3 py-2 text-white font-bold w-32">Crew Details</th>
+                <th className="border border-slate-600 px-3 py-2 text-white font-bold">Name</th>
+                <th className="border border-slate-600 px-3 py-2 text-white font-bold w-28">Time of Change</th>
+                <th className="border border-slate-600 px-3 py-2 text-white font-bold">Remarks</th>
+                <th className="border border-slate-600 px-3 py-2 text-white font-bold w-28">Signature</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: HANDOVER_ROWS }, (_, i) => (
+                ['Handling Pilot', 'Relieving Pilot'] as const
+              ).map((role, j) => {
+                const rowId = `crew-${i}-${j}`;
+                return (
+                  <tr key={rowId} className="bg-slate-800">
+                    <td className="border border-slate-600 px-3 py-1 text-white font-semibold">{role}</td>
+                    {(['name', 'time', 'remarks', 'signature'] as const).map(field => (
+                      <td key={field} className="border border-slate-600 p-0.5">
+                        <input
+                          type="text"
+                          value={getStr(`ho-${rowId}-${field}`)}
+                          onChange={e => update(`ho-${rowId}-${field}`, e.target.value)}
+                          className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                );
+              }).flat())}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Observations */}
+      <div>
+        <h4 className="text-white font-black text-sm mb-3">Observations</h4>
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr className="bg-slate-700">
+              <th className="border border-slate-600 px-3 py-2 text-white font-bold">Observations</th>
+              <th className="border border-slate-600 px-3 py-2 text-white font-bold w-28">Date</th>
+              <th className="border border-slate-600 px-3 py-2 text-white font-bold w-24">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[0, 1].map(i => (
+              <tr key={i} className="bg-slate-800">
+                {i === 0 ? (
+                  <td className="border border-slate-600 p-1" rowSpan={2}>
+                    <textarea
+                      value={getStr('ho-observations')}
+                      onChange={e => update('ho-observations', e.target.value)}
+                      rows={5}
+                      className="w-full bg-transparent text-white text-xs px-2 py-1 focus:outline-none focus:bg-slate-700 rounded resize-none"
+                      placeholder="Observations…"
+                    />
+                  </td>
+                ) : null}
+                <td className="border border-slate-600 p-0.5">
+                  <input
+                    type="date"
+                    value={getStr(`ho-obs-date-${i}`)}
+                    onChange={e => update(`ho-obs-date-${i}`, e.target.value)}
+                    className="w-full bg-transparent text-white text-xs px-2 py-1 focus:outline-none focus:bg-slate-700 rounded"
+                  />
+                </td>
+                <td className="border border-slate-600 p-0.5">
+                  <input
+                    type="time"
+                    value={getStr(`ho-obs-time-${i}`)}
+                    onChange={e => update(`ho-obs-time-${i}`, e.target.value)}
+                    className="w-full bg-transparent text-white text-xs px-2 py-1 focus:outline-none focus:bg-slate-700 rounded"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* RPIC sign-off */}
+      <RpicSignRow prefix="ho" getStr={getStr} update={update} />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   POST-FLIGHT — Documentation Review — Page 13
+──────────────────────────────────────────────── */
+const POST_FLIGHT_CHECKS = [
+  { id: 'pf-all-completed', label: 'All checklist items completed and verified' },
+  { id: 'pf-all-filled', label: 'All fields filled in (no blank mandatory items)' },
+  { id: 'pf-reviewed', label: 'NOC reviewed for completeness and coherence' },
+];
+
+function PostFlightTab({
+  getBool,
+  getStr,
+  update,
+}: {
+  getBool: (k: string) => boolean;
+  getStr: (k: string) => string;
+  update: (k: string, v: FieldValue) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <h4 className="text-white font-black text-sm">Post-Flight Documentation Review</h4>
+
+      {/* Checkboxes */}
+      <div className="border border-slate-600 rounded overflow-hidden">
+        {POST_FLIGHT_CHECKS.map(item => (
+          <label
+            key={item.id}
+            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-700 last:border-0 hover:bg-slate-700/30 cursor-pointer"
+          >
+            <span className={`text-sm ${getBool(item.id) ? 'text-slate-500 line-through' : 'text-white'}`}>
+              {item.label}
+            </span>
+            <input
+              type="checkbox"
+              checked={getBool(item.id)}
+              onChange={e => update(item.id, e.target.checked)}
+              className="w-5 h-5 accent-red-500 cursor-pointer flex-shrink-0"
+            />
+          </label>
+        ))}
+      </div>
+
+      {/* Confirmation statement */}
+      <div className="bg-slate-900/60 border border-slate-700 rounded p-4">
+        <p className="text-slate-300 text-xs italic leading-relaxed">
+          I confirm that this Normal Operations Checklist has been fully completed, reviewed, and accurately reflects the
+          conduct of this mission.
+        </p>
+      </div>
+
+      {/* RPIC sign-off */}
+      <RpicSignRow prefix="postflight" getStr={getStr} update={update} />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   Shared RPIC signature row
+──────────────────────────────────────────────── */
+function RpicSignRow({
+  prefix,
+  getStr,
+  update,
+}: {
+  prefix: string;
+  getStr: (k: string) => string;
+  update: (k: string, v: FieldValue) => void;
+}) {
+  return (
+    <table className="w-full text-xs border-collapse">
+      <tbody>
+        <tr className="bg-slate-800">
+          <td className="border border-slate-600 px-3 py-2 text-white font-bold w-16">RPIC</td>
+          <td className="border border-slate-600 p-0.5 w-40">
+            <input
+              type="text"
+              value={getStr(`${prefix}-rpic-name`)}
+              onChange={e => update(`${prefix}-rpic-name`, e.target.value)}
+              placeholder="Name"
+              className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+            />
+          </td>
+          <td className="border border-slate-600 px-3 py-2 text-slate-400 text-xs w-12">Sign:</td>
+          <td className="border border-slate-600 p-0.5">
+            <input
+              type="text"
+              value={getStr(`${prefix}-rpic-sign`)}
+              onChange={e => update(`${prefix}-rpic-sign`, e.target.value)}
+              className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+            />
+          </td>
+          <td className="border border-slate-600 px-3 py-2 text-slate-400 text-xs w-12">Date:</td>
+          <td className="border border-slate-600 p-0.5 w-36">
+            <input
+              type="date"
+              value={getStr(`${prefix}-rpic-date`)}
+              onChange={e => update(`${prefix}-rpic-date`, e.target.value)}
+              className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
