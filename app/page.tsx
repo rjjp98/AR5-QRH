@@ -6,6 +6,13 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, L
 type PageType = 'home' | 'dashboard' | 'checklists' | 'fuel' | 'wind' | 'range';
 type ChecklistType = 'noc' | 'pdi';
 
+interface ChecklistItem {
+  number: number;
+  label: string;
+  description?: string;
+  type: 'checkbox' | 'text';
+}
+
 interface FuelEntry {
   date: string;
   quantity: number;
@@ -30,6 +37,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistType>('noc');
   const [isClient, setIsClient] = useState(false);
+  const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [fuelLog, setFuelLog] = useState<FuelEntry[]>([
     { date: '2026-07-01', quantity: 120, type: 'Avgas' },
     { date: '2026-06-30', quantity: 115, type: 'Avgas' },
@@ -49,9 +57,134 @@ export default function Dashboard() {
   const [newWind, setNewWind] = useState({ time: '', speed: 0, direction: 0, gusts: 0 });
   const [newRange, setNewRange] = useState({ distance: 0, battery: 0, altitude: 0, time: '' });
 
+  // NOC Checklist Items
+  const nocItems: ChecklistItem[] = [
+    { number: 0, label: 'Daily Briefing / I&apos;M SAFE', type: 'checkbox' },
+    { number: 1, label: 'UAS GEO ZONES (ANAC)', type: 'text' },
+    { number: 2, label: 'ProCiv (Civil Protection)', type: 'checkbox' },
+    { number: 3, label: 'Consult NOTAM', type: 'checkbox' },
+    { number: 4, label: 'NOTAM AIRSPACE', type: 'text' },
+    { number: 5, label: 'Transponder', type: 'text' },
+    { number: 6, label: 'Pre-Delivery Inspection', type: 'text' },
+    { number: 7, label: 'Remote ID', type: 'checkbox' },
+    { number: 8, label: 'Data Link &amp; Tracker', type: 'checkbox' },
+    { number: 9, label: 'Browser', type: 'checkbox' },
+    { number: 10, label: 'VPN', type: 'checkbox' },
+    { number: 11, label: 'AWS Remote Desktop', type: 'checkbox' },
+    { number: 12, label: 'Coms Check', type: 'checkbox' },
+    { number: 13, label: 'EPU and Wheel Chocks', type: 'checkbox' },
+    { number: 14, label: 'Technician Handover', type: 'text' },
+    { number: 15, label: 'SPC Checklist', type: 'text' },
+    { number: 16, label: 'Aircraft Level', type: 'checkbox' },
+    { number: 17, label: 'Pilot Cover', type: 'checkbox' },
+    { number: 18, label: 'Aircraft ON', type: 'checkbox' },
+    { number: 19, label: 'System Initializing', type: 'checkbox' },
+    { number: 20, label: 'Initialization', type: 'checkbox' },
+    { number: 21, label: 'Flight GCS', type: 'checkbox' },
+    { number: 22, label: 'Mode', type: 'checkbox' },
+    { number: 23, label: 'SPC Ignition Test', type: 'checkbox' },
+    { number: 24, label: 'Ignition', type: 'checkbox' },
+    { number: 25, label: 'Throttle %', type: 'checkbox' },
+    { number: 26, label: 'Accelerometer (EMI check)', type: 'checkbox' },
+    { number: 27, label: 'Gyro (EMI check)', type: 'checkbox' },
+    { number: 28, label: 'Battery Voltage', type: 'checkbox' },
+    { number: 29, label: 'GPS1 (EMI check)', type: 'checkbox' },
+    { number: 30, label: 'GPS2 (EMI check)', type: 'checkbox' },
+    { number: 31, label: 'SPC Range Check', type: 'checkbox' },
+    { number: 32, label: 'Throttle Failsafe', type: 'checkbox' },
+    { number: 33, label: 'Magnetometer', type: 'checkbox' },
+    { number: 34, label: 'SPC', type: 'checkbox' },
+    { number: 35, label: 'Satcom Service', type: 'checkbox' },
+    { number: 36, label: 'RLOS (EMI check)', type: 'checkbox' },
+    { number: 37, label: 'RLOS-B', type: 'checkbox' },
+    { number: 38, label: '4G', type: 'checkbox' },
+    { number: 39, label: 'RSSI Graph', type: 'checkbox' },
+    { number: 40, label: 'SATCOM IRU + Router', type: 'checkbox' },
+    { number: 41, label: 'Payload', type: 'checkbox' },
+    { number: 42, label: 'ATLAS', type: 'checkbox' },
+    { number: 43, label: 'Radar', type: 'checkbox' },
+    { number: 44, label: 'SATCOM-B', type: 'checkbox' },
+    { number: 45, label: 'Remaining fuel (sensor)', type: 'text' },
+    { number: 46, label: 'Initial fuel level', type: 'text' },
+    { number: 47, label: 'Parameters', type: 'checkbox' },
+    { number: 48, label: 'GROUND_STEER_ALT', type: 'checkbox' },
+    { number: 49, label: 'ALT_HOLD_RTL', type: 'text' },
+    { number: 50, label: 'TRIM_ARSPD_CM', type: 'text' },
+    { number: 51, label: 'ARSPD_PRIMARY', type: 'checkbox' },
+    { number: 52, label: 'Airspeed', type: 'checkbox' },
+    { number: 53, label: 'Barometer', type: 'text' },
+    { number: 54, label: 'Lidar distance', type: 'checkbox' },
+    { number: 55, label: 'Mode FBWA', type: 'checkbox' },
+    { number: 56, label: 'Roll Left', type: 'checkbox' },
+    { number: 57, label: 'Pitch Up', type: 'checkbox' },
+    { number: 58, label: 'Roll Right', type: 'checkbox' },
+    { number: 59, label: 'Pilot', type: 'checkbox' },
+    { number: 60, label: 'Airspeed 1 Test (EMI check)', type: 'checkbox' },
+    { number: 61, label: 'Airspeed 2 Test (EMI check)', type: 'checkbox' },
+    { number: 62, label: 'Airspeed 3 Test (EMI check)', type: 'checkbox' },
+    { number: 63, label: 'Mode Manual', type: 'checkbox' },
+    { number: 64, label: 'Weather Conditions', type: 'checkbox' },
+    { number: 65, label: 'Maximum take-off headwind', type: 'text' },
+    { number: 66, label: 'Maximum take-off crosswind', type: 'text' },
+    { number: 67, label: 'Runway', type: 'checkbox' },
+    { number: 68, label: 'Load Areas', type: 'checkbox' },
+    { number: 69, label: 'Routes', type: 'checkbox' },
+    { number: 70, label: 'Navigation Lights', type: 'checkbox' },
+    { number: 71, label: 'Strobe lights', type: 'checkbox' },
+    { number: 72, label: 'Landing Lights', type: 'checkbox' },
+    { number: 73, label: 'Transponder', type: 'checkbox' },
+    { number: 74, label: 'Request Startup', type: 'checkbox' },
+    { number: 75, label: 'EPU', type: 'checkbox' },
+    { number: 76, label: 'Throttle', type: 'checkbox' },
+    { number: 77, label: 'Ignition', type: 'checkbox' },
+    { number: 78, label: 'Brakes', type: 'checkbox' },
+    { number: 79, label: 'Startup #1 &amp; #2', type: 'text' },
+    { number: 80, label: 'Engine Warm Up', type: 'checkbox' },
+    { number: 81, label: 'Engine Status', type: 'checkbox' },
+    { number: 82, label: 'Engine Temperature', type: 'checkbox' },
+    { number: 83, label: 'Ignition tests @3000rpm', type: 'checkbox' },
+    { number: 84, label: 'Engine Max RPM Test (5 Seconds)', type: 'text' },
+    { number: 85, label: 'Battery Status', type: 'checkbox' },
+    { number: 86, label: 'Payload Checklist', type: 'text' },
+    { number: 87, label: 'Request Taxi', type: 'checkbox' },
+    { number: 88, label: 'Wheel Checks', type: 'checkbox' },
+    { number: 89, label: 'Taxi', type: 'checkbox' },
+    { number: 90, label: 'Check Controls', type: 'checkbox' },
+    { number: 91, label: 'Check Brakes', type: 'checkbox' },
+    { number: 92, label: 'Check Steering', type: 'checkbox' },
+    { number: 93, label: 'Tracker', type: 'checkbox' },
+    { number: 94, label: 'Stop on Runway', type: 'checkbox' },
+    { number: 95, label: 'Route', type: 'checkbox' },
+    { number: 96, label: 'GCS Warnings', type: 'checkbox' },
+    { number: 97, label: 'General Status', type: 'checkbox' },
+    { number: 98, label: 'Transponder', type: 'checkbox' },
+    { number: 99, label: 'Crew', type: 'checkbox' },
+    { number: 100, label: 'Commander', type: 'checkbox' },
+    { number: 101, label: 'Request Take-off', type: 'checkbox' },
+    { number: 102, label: 'Time info panel', type: 'checkbox' },
+    { number: 103, label: 'Engines', type: 'checkbox' },
+    { number: 104, label: 'Take-off', type: 'text' },
+    { number: 105, label: 'Take-off Complete', type: 'checkbox' },
+    { number: 106, label: 'Transit Corridor Payload SURVEY', type: 'checkbox' },
+    { number: 107, label: 'Change THR_MIN', type: 'checkbox' },
+    { number: 108, label: 'SATCOM &amp; Radar On', type: 'checkbox' },
+    { number: 109, label: 'Browser', type: 'checkbox' },
+    { number: 110, label: 'GCS Warnings', type: 'checkbox' },
+    { number: 111, label: 'Ground Steer', type: 'checkbox' },
+    { number: 112, label: 'SPC', type: 'checkbox' },
+    { number: 113, label: 'Rally points', type: 'checkbox' },
+  ];
+
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleInputChange = (key: string, value: string | boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
 
   const handleAddFuel = () => {
     if (newFuel.date && newFuel.quantity > 0) {
@@ -269,14 +402,37 @@ export default function Dashboard() {
             </div>
 
             {selectedChecklist === 'noc' && (
-              <div className="bg-slate-800 rounded-lg p-6 text-white shadow-lg">
-                <h3 className="text-2xl font-black mb-4">NOC - Normal Operations Checklist</h3>
-                <p className="text-slate-400 mb-6">Complete checklist with 113 items covering all phases of flight.</p>
-                <a href="#noc-section" onClick={() => {}} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg inline-block transition">
-                  📋 Open NOC Checklist
-                </a>
-                <div id="noc-section" className="mt-8 p-6 bg-slate-700/50 rounded-lg">
-                  <p className="text-slate-300">NOC Checklist content is loaded below...</p>
+              <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-6 border-b border-slate-700">
+                  <h3 className="text-2xl font-black text-white mb-2">NOC - Normal Operations Checklist</h3>
+                  <p className="text-slate-400 text-sm">Complete checklist with 113 items covering all phases of flight.</p>
+                </div>
+
+                <div className="p-6 max-h-[800px] overflow-y-auto">
+                  <div className="space-y-4">
+                    {nocItems.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-4 p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition">
+                        <span className="text-red-500 font-bold min-w-[40px]">{item.number}.</span>
+                        <span className="text-slate-200 flex-1 font-semibold">{item.label}</span>
+                        {item.type === 'checkbox' ? (
+                          <input
+                            type="checkbox"
+                            checked={(formData[`noc-${item.number}`] as boolean) || false}
+                            onChange={(e) => handleInputChange(`noc-${item.number}`, e.target.checked)}
+                            className="w-5 h-5 rounded cursor-pointer accent-red-500"
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="___"
+                            value={(formData[`noc-${item.number}`] as string) || ''}
+                            onChange={(e) => handleInputChange(`noc-${item.number}`, e.target.value)}
+                            className="px-3 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm w-32"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
