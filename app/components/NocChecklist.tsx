@@ -11,6 +11,7 @@ interface NocHeader {
   tracker: string;
   rpic: string;
   mission: string;
+  nocVersion: string;
 }
 
 interface FlightResume {
@@ -40,7 +41,7 @@ const TABS: { id: NocTab; label: string; icon: string }[] = [
 ];
 
 const DEFAULT_DATA: NocData = {
-  header: { aircraftID: '', gcs: '', tracker: '', rpic: '', mission: '' },
+  header: { aircraftID: '', gcs: '', tracker: '', rpic: '', mission: '', nocVersion: '5' },
   flightResume: { date: '', departureTime: '', landingTime: '', totalFlightTime: '', remarks: '' },
   fields: {},
 };
@@ -123,6 +124,7 @@ export default function NocChecklist() {
   if (!isClient) return null;
 
   const headerFields: { key: keyof NocHeader; label: string }[] = [
+    { key: 'nocVersion', label: 'NOC Version' },
     { key: 'aircraftID', label: 'Aircraft ID' },
     { key: 'gcs', label: 'GCS' },
     { key: 'tracker', label: 'Tracker' },
@@ -168,7 +170,7 @@ export default function NocChecklist() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {headerFields.map(({ key, label }) => (
             <div key={key}>
               <label className="block text-slate-400 text-xs font-semibold uppercase mb-1">
@@ -233,7 +235,7 @@ export default function NocChecklist() {
             <PreFlightTab getStr={getStr} getBool={getBool} getNum={getNum} update={updateField} />
           )}
           {activeTab === 'takeoff' && (
-            <PlaceholderTab tab={TABS.find(t => t.id === 'takeoff')!} />
+            <TakeOffTab getStr={getStr} update={updateField} />
           )}
           {activeTab === 'inflight' && (
             <InFlightTab getStr={getStr} update={updateField} />
@@ -333,9 +335,6 @@ function PreFlightTab({ getStr, getBool, getNum, update }: FieldProps) {
 
   return (
     <div className="space-y-6">
-      <p className="text-slate-500 text-xs italic">
-        Phase 1 skeleton — full ~80 fields will be added in Phase 2.
-      </p>
       {sections.map(section => (
         <div key={section.title}>
           <h4 className="text-red-400 font-black uppercase text-xs tracking-widest mb-3 pb-1 border-b border-slate-700">
@@ -401,6 +400,191 @@ function FieldRow({ item, getStr, getBool, getNum, update }: { item: ItemDef } &
         placeholder="—"
         className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm focus:outline-none focus:border-red-500"
       />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+   TAKE-OFF — NOC page alignment (rows 80–97)
+──────────────────────────────────────────────── */
+function TakeOffTab({ getStr, update }: { getStr: (k: string) => string; update: (k: string, v: FieldValue) => void }) {
+  const remarksInput = (key: string) => (
+    <input
+      type="text"
+      value={getStr(key)}
+      onChange={e => update(key, e.target.value)}
+      className="w-full bg-transparent text-white text-xs px-2 py-1.5 focus:outline-none focus:bg-slate-700 rounded"
+      placeholder="Remarks"
+    />
+  );
+
+  return (
+    <div className="space-y-4">
+      <h4 className="text-white font-black text-sm">Before Take-off</h4>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse min-w-[980px]">
+          <tbody>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold w-14">80</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold w-44">Roll Right</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
+                Check Left Aileron Up/ Right Aileron Down/ Lidar Increase / Instruments
+              </td>
+              <td className="border border-slate-600 p-1 w-40">{remarksInput('to-80')}</td>
+            </tr>
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">81</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Pitot</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Remove cover</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-81')}</td>
+            </tr>
+
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">82</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold" rowSpan={3}>
+                Airspeed Test
+              </td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
+                Check EKF Table for Instance in use — Airspeed 1 test
+              </td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-82')}</td>
+            </tr>
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">83</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Airspeed 2 test</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-83')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">84</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Airspeed 3 test</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-84')}</td>
+            </tr>
+
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">85</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Mode Manual</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Change</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-85')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">86</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">RC receivers Availability</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check 2 receivers available</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-86')}</td>
+            </tr>
+
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold" rowSpan={2}>87</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold leading-relaxed" rowSpan={2}>
+                Weather Conditions Limits:
+                <br />→ Headwind ≤25kts (gusts 30)
+                <br />→ Crosswind ≤14kts (gusts 17)
+                <br />→ Cruise ≤35kts
+                <br />→ Tailwind ≤5kts
+                <br />→ Temp -10–40°C
+              </td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check &amp; log PT - IPMA</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-87-pt')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">
+                Check &amp; log ES - AEMET (if Cross Border Flight)
+              </td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-87-es')}</td>
+            </tr>
+
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">88</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Runway</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Check runway and take-off direction</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-88')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">89</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Payload Configuration</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Confirm payload config/status. Observations:</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-89')}</td>
+            </tr>
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">90</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Gimbal</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set to PROTECT</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-90')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">91</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">SAR / VIDAR</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">ON and confirm PROTECT mode</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-91')}</td>
+            </tr>
+
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold" rowSpan={9}>92</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold leading-relaxed" rowSpan={9}>
+                Routes
+                <br />
+                1. Read
+                <br />
+                If needed:
+                <br />
+                1. Load,
+                <br />
+                2. Write
+                <br />
+                3. Read
+              </td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Mission Loaded</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-92-1')}</td>
+            </tr>
+            {[
+              'Prepare Take-off Set',
+              'Loiter radius min 250m',
+              'CW or CCW',
+              'WP radius 100',
+              'Prepare Landing Set',
+              'LANDING Waypoint Set',
+              'Lock Heading',
+              'Check loaded Rally points',
+            ].map((line, idx) => (
+              <tr key={line} className={idx % 2 === 0 ? 'bg-slate-800' : 'bg-slate-800/60'}>
+                <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">{line}</td>
+                <td className="border border-slate-600 p-1">{remarksInput(`to-92-${idx + 2}`)}</td>
+              </tr>
+            ))}
+
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">93</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Transponder</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Switch ON</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-93')}</td>
+            </tr>
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">94</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Flight ID</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set Flight ID (TEK01/02)</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-94')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">95</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Aircraft Address</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set Aircraft Address</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-95')}</td>
+            </tr>
+            <tr className="bg-slate-800/60">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">96</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">Squawk Code</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set VFR Squawk (A5656)</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-96')}</td>
+            </tr>
+            <tr className="bg-slate-800">
+              <td className="border border-slate-600 px-2 py-2 text-center text-red-400 font-bold">97</td>
+              <td className="border border-slate-600 px-3 py-2 text-white font-bold">ACS Mode</td>
+              <td className="border border-slate-600 px-3 py-2 text-slate-200 text-center">Set STANDBY on ground</td>
+              <td className="border border-slate-600 p-1">{remarksInput('to-97')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
