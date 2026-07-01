@@ -316,7 +316,7 @@ export default function Dashboard() {
                         }}
                         className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded transition"
                       >
-                        View & Edit
+                        View &amp; Edit
                       </button>
                     </div>
                   );
@@ -349,7 +349,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-red-500 font-bold mb-2">4. Access Saved Data</h3>
-                <p>View all your saved checklists in the "Saved Data" tab.</p>
+                <p>View all your saved checklists in the &quot;Saved Data&quot; tab.</p>
               </div>
             </div>
           </div>
